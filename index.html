@@ -3,275 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HARMONY ANALYZER v1.5 (Debug Mode)</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-
+    <title>Manual Harmony Analyzer (Pro)</title>
     <style>
         body {
-            background-color: #0d0d0d;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh;
             margin: 0;
             padding: 20px;
         }
 
-        h1 { margin-bottom: 5px; text-shadow: 0 0 5px #00ff00; }
+        h1 { color: #00ff88; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .subtitle { font-size: 0.9em; opacity: 0.7; margin-bottom: 20px; }
+
+        /* CONTROL PANEL */
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #1e1e1e;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
         
-        /* The container for the image and canvas */
-        #container {
-            position: relative;
-            margin-top: 20px;
-            border: 1px solid #333;
-            display: inline-block;
-        }
-
-        /* Image and Canvas stack on top of each other */
-        img {
-            max-width: 100%;
-            max-height: 80vh; /* Prevents image from being too tall */
-            display: block;
-            opacity: 0.8;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Let clicks pass through */
-        }
-
-        /* Controls */
-        #controls { margin: 20px 0; z-index: 10; }
-        input[type="file"] {
-            background: #1a1a1a;
-            color: #00ff00;
-            border: 1px solid #00ff00;
-            padding: 10px;
+        button, select, input::file-selector-button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 15px;
             cursor: pointer;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        button:hover { background: #444; }
+        button.active { background: #00ff88; color: black; border-color: #00ff88; }
+        
+        /* WORKSPACE */
+        #workspace {
+            position: relative;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            cursor: crosshair;
+            display: none; /* Hidden until image loaded */
         }
 
-        /* The Report Box */
-        #report-box {
-            margin-top: 30px;
-            border: 1px solid #333;
-            background: #000;
-            padding: 20px;
+        canvas { display: block; max-width: 90vw; max-height: 70vh; }
+
+        /* INSTRUCTION BOX */
+        #guide-box {
+            margin-top: 15px;
+            background: #2a2a2a;
+            border-left: 4px solid #00ff88;
+            padding: 15px;
             width: 90%;
             max-width: 600px;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.1);
-            display: none; /* Hidden by default */
+            text-align: center;
+            font-size: 1.1em;
+        }
+        #current-step { color: #00ff88; font-weight: bold; }
+
+        /* ZOOM LENS */
+        #magnifier {
+            position: absolute;
+            border: 2px solid #00ff88;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            pointer-events: none; /* Click through it */
+            display: none;
+            background-repeat: no-repeat;
+            background-color: #000;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(0,255,136,0.5);
         }
 
-        /* Debug Logger */
-        #debug-log {
-            margin-top: 10px;
-            color: yellow;
-            font-size: 0.8em;
-            border: 1px dashed yellow;
-            padding: 5px;
-            max-width: 600px;
+        /* RESULTS */
+        #report {
+            margin-top: 30px;
+            width: 90%;
+            max-width: 800px;
             display: none;
         }
+        .metric-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .metric-name { font-weight: bold; }
+        .tier-s { color: #ffd700; font-weight: bold; }
+        .tier-a { color: #00ff88; font-weight: bold; }
+        .tier-b { color: #00ccff; }
+        .tier-f { color: #ff4444; }
 
-        .tier-s { color: #ffd700; text-shadow: 0 0 5px #ffd700; font-weight: bold; }
-        .tier-a { color: #00ff00; font-weight: bold; }
-        .tier-b { color: #aaaaaa; }
-        .tier-f { color: #ff3333; }
     </style>
 </head>
 <body>
 
-    <h1>HARMONY ANALYZER v1.5</h1>
-    <div>Upload a Front or Side Profile (JPG/PNG)</div>
+    <h1>Harmony Analyzer <span style="font-size:0.5em; vertical-align:top;">PRO</span></h1>
+    <div class="subtitle">Manual Landmark Edition (Precision Tool)</div>
 
-    <div id="controls">
-        <input type="file" id="imageUpload" accept="image/png, image/jpeg, image/jpg">
-    </div>
-    
-    <div id="debug-log">System Status: Waiting for user...</div>
-
-    <div id="container" style="display:none;">
-        <img id="inputImage" src="" alt="Face Analysis" />
-        <canvas id="outputCanvas"></canvas>
+    <div class="controls">
+        <input type="file" id="imageUpload" accept="image/*">
+        <select id="profileType">
+            <option value="front">Front Profile</option>
+            <option value="side">Side Profile</option>
+        </select>
+        <button onclick="reset()" style="background:#552222;">Reset</button>
     </div>
 
-    <div id="report-box">
-        <h3 style="border-bottom: 1px dashed #00ff00; padding-bottom:10px;">// ANALYSIS REPORT</h3>
-        <div id="metrics"></div>
+    <div id="guide-box">
+        Step <span id="step-count">0</span>: <span id="current-step">Upload an image to begin</span>
+    </div>
+
+    <div id="workspace">
+        <canvas id="mainCanvas"></canvas>
+        <div id="magnifier"></div>
+    </div>
+
+    <div id="report">
+        <h3 style="border-bottom: 1px dashed #555; padding-bottom:10px;">// ANALYSIS REPORT</h3>
+        <div id="metrics-container"></div>
     </div>
 
     <script>
-        // --- 1. SETUP VARIABLES ---
-        const imageUpload = document.getElementById('imageUpload');
-        const inputImage = document.getElementById('inputImage');
-        const canvas = document.getElementById('outputCanvas');
+        // CONFIGURATION
+        const canvas = document.getElementById('mainCanvas');
         const ctx = canvas.getContext('2d');
-        const reportBox = document.getElementById('report-box');
-        const metricsDiv = document.getElementById('metrics');
-        const debugLog = document.getElementById('debug-log');
-        const container = document.getElementById('container');
+        const magnifier = document.getElementById('magnifier');
+        const workspace = document.getElementById('workspace');
+        
+        let img = new Image();
+        let scale = 1;
+        let points = [];
+        let currentMode = "front";
+        let stepIndex = 0;
 
-        function log(msg) {
-            debugLog.style.display = 'block';
-            debugLog.innerHTML = "STATUS: " + msg;
-            console.log(msg);
+        // DEFINING THE LANDMARKS
+        const LANDMARKS = {
+            front: [
+                { id: "hairline", name: "Top of Forehead (Hairline)" },
+                { id: "glabella", name: "Between Eyebrows (Glabella)" },
+                { id: "subnasale", name: "Bottom of Nose (Base)" },
+                { id: "menton", name: "Bottom of Chin" },
+                { id: "l_ex", name: "Left Eye Outer Corner" },
+                { id: "l_en", name: "Left Eye Inner Corner" },
+                { id: "r_en", name: "Right Eye Inner Corner" },
+                { id: "r_ex", name: "Right Eye Outer Corner" },
+                { id: "l_zygo", name: "Left Cheekbone (Widest Point)" },
+                { id: "r_zygo", name: "Right Cheekbone (Widest Point)" }
+            ],
+            side: [
+                { id: "glabella", name: "Brow Ridge (Most Forward Point)" },
+                { id: "nasion", name: "Nose Bridge (Deepest Dip)" },
+                { id: "pronasale", name: "Nose Tip" },
+                { id: "subnasale", name: "Nose Base (Connection to Lip)" },
+                { id: "ls", name: "Upper Lip (Most Forward)" },
+                { id: "li", name: "Lower Lip (Most Forward)" },
+                { id: "pogonion", name: "Chin Tip (Most Forward)" },
+                { id: "menton", name: "Chin Bottom (Lowest Point)" },
+                { id: "gonion", name: "Jaw Corner (The Angle)" },
+                { id: "tragion", name: "Ear Canal (Tragus)" }
+            ]
+        };
+
+        // EVENT LISTENERS
+        document.getElementById('imageUpload').addEventListener('change', handleUpload);
+        document.getElementById('profileType').addEventListener('change', (e) => {
+            currentMode = e.target.value;
+            reset();
+        });
+        
+        canvas.addEventListener('mousemove', handleMagnifier);
+        canvas.addEventListener('mouseout', () => magnifier.style.display = 'none');
+        canvas.addEventListener('click', handlePointClick);
+
+        function handleUpload(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                // Determine scale to fit screen
+                const maxWidth = window.innerWidth * 0.9;
+                const maxHeight = window.innerHeight * 0.7;
+                const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+                
+                canvas.width = img.width * ratio;
+                canvas.height = img.height * ratio;
+                scale = ratio;
+                
+                reset();
+                draw();
+                workspace.style.display = 'block';
+                document.getElementById('report').style.display = 'none';
+            };
+            img.src = url;
         }
 
-        // --- 2. INITIALIZE AI ---
-        log("Initializing FaceMesh...");
-        
-        const faceMesh = new FaceMesh({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-        }});
+        function reset() {
+            points = [];
+            stepIndex = 0;
+            updateGuide();
+            draw();
+            document.getElementById('report').style.display = 'none';
+        }
 
-        faceMesh.setOptions({
-            maxNumFaces: 1,
-            refineLandmarks: true,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
+        function handleMagnifier(e) {
+            if(!img.src) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
 
-        faceMesh.onResults(onResults);
-        
-        log("System Ready. Please upload an image.");
+            magnifier.style.display = 'block';
+            magnifier.style.left = (x - 60) + 'px'; // Center the 120px div
+            magnifier.style.top = (y - 60) + 'px';
 
-        // --- 3. HANDLE UPLOAD ---
-        imageUpload.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
+            // Calculate zoom background position
+            // We want the background to show the image corresponding to mouse pos
+            // Image is drawn at 'scale'. 
+            // Zoom level: 2x or 3x
+            const zoom = 3; 
+            
+            // Map canvas coord back to image coord
+            const imgX = x / scale;
+            const imgY = y / scale;
 
-            // Reset UI
-            reportBox.style.display = 'none';
-            container.style.display = 'block';
-            log("Loading image...");
+            magnifier.style.backgroundImage = `url('${img.src}')`;
+            magnifier.style.backgroundSize = `${img.width * scale * zoom}px ${img.height * scale * zoom}px`;
+            
+            // Offset logic is tricky. 
+            // We need to shift the background so that (imgX, imgY) is in the center of the magnifier
+            const bgPosX = -(imgX * scale * zoom - 60);
+            const bgPosY = -(imgY * scale * zoom - 60);
+            
+            magnifier.style.backgroundPosition = `${bgPosX}px ${bgPosY}px`;
+        }
 
-            const imgUrl = URL.createObjectURL(file);
-            inputImage.src = imgUrl;
+        function handlePointClick(e) {
+            if(!img.src) return;
+            const guide = LANDMARKS[currentMode];
+            if(stepIndex >= guide.length) return; // Done
 
-            inputImage.onload = async () => {
-                // Resize canvas to match image exactly
-                canvas.width = inputImage.naturalWidth;
-                canvas.height = inputImage.naturalHeight;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            points.push({ x: x, y: y, label: guide[stepIndex].id });
+            stepIndex++;
+            
+            draw();
+            updateGuide();
+
+            if(stepIndex >= guide.length) {
+                calculateResults();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw Image
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Draw Overlay
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0,0,canvas.width, canvas.height); // Dim background to make points pop
+            
+            // Draw Points
+            points.forEach((p, index) => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#00ff88';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
                 
-                log("Scanning Face... (This may take 5 seconds)");
-                
-                try {
-                    await faceMesh.send({image: inputImage});
-                } catch (error) {
-                    log("ERROR: AI crashed. " + error.message);
-                }
-            };
-        });
+                // Draw Label
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px monospace';
+                ctx.fillText(index + 1, p.x + 8, p.y + 4);
+            });
+            
+            // Draw current active line connection preview (optional)
+        }
 
-        // --- 4. MATH FUNCTIONS ---
-        function getDist(p1, p2) {
+        function updateGuide() {
+            const guide = LANDMARKS[currentMode];
+            const box = document.getElementById('guide-box');
+            const stepSpan = document.getElementById('step-count');
+            const txtSpan = document.getElementById('current-step');
+
+            if(stepIndex < guide.length) {
+                stepSpan.innerText = stepIndex + 1;
+                txtSpan.innerText = "Click: " + guide[stepIndex].name;
+                box.style.borderLeftColor = "#00ff88";
+            } else {
+                stepSpan.innerText = "Done";
+                txtSpan.innerText = "Analysis Generated Below";
+                box.style.borderLeftColor = "#ffd700";
+            }
+        }
+
+        // --- MATH & ANALYSIS ---
+        function getPt(id) {
+            return points.find(p => p.label === id);
+        }
+
+        function dist(p1, p2) {
             return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
         }
 
-        function getAngle(A, B, C) {
-            // Returns angle at B in degrees
-            if(!A || !B || !C) return 0;
-            const AB = Math.sqrt(Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2));
-            const BC = Math.sqrt(Math.pow(B.x - C.x, 2) + Math.pow(B.y - C.y, 2));
-            const AC = Math.sqrt(Math.pow(C.x - A.x, 2) + Math.pow(C.y - A.y, 2));
-            if(BC*AB === 0) return 0;
-            return Math.acos((BC*BC + AB*AB - AC*AC) / (2*BC*AB)) * (180 / Math.PI);
+        function angle(A, B, C) {
+            // Angle at B
+            const AB = dist(A, B);
+            const BC = dist(B, C);
+            const AC = dist(A, C);
+            return Math.acos((AB*AB + BC*BC - AC*AC) / (2*AB*BC)) * (180/Math.PI);
         }
 
-        function getTier(val, sMin, sMax, aMin, aMax) {
-            if (val >= sMin && val <= sMax) return ["Tier S (Ideal)", "tier-s"];
-            if (val >= aMin && val <= aMax) return ["Tier A", "tier-a"];
-            return ["Tier B/C", "tier-b"];
+        function getTier(val, sRange, aRange) {
+            // Helper to determine tier
+            if (val >= sRange[0] && val <= sRange[1]) return `<span class="tier-s">TIER S (Ideal)</span>`;
+            if (val >= aRange[0] && val <= aRange[1]) return `<span class="tier-a">TIER A</span>`;
+            return `<span class="tier-b">TIER B/C</span>`;
         }
 
-        // --- 5. THE AI PROCESSOR ---
-        function onResults(results) {
-            log("Face detected. Calculating scores...");
-            
-            if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-                log("No face found. Try a clearer photo.");
-                return;
-            }
+        function calculateResults() {
+            const container = document.getElementById('metrics-container');
+            let html = "";
 
-            const landmarks = results.multiFaceLandmarks[0];
+            if(currentMode === "front") {
+                const l_ex = getPt("l_ex"), l_en = getPt("l_en");
+                const r_ex = getPt("r_ex"), r_en = getPt("r_en");
+                const hairline = getPt("hairline"), glabella = getPt("glabella");
+                const subnasale = getPt("subnasale"), menton = getPt("menton");
+                const l_zygo = getPt("l_zygo"), r_zygo = getPt("r_zygo");
 
-            // Draw Mesh
-            if (window.drawConnectors) {
-                drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C040', lineWidth: 1});
-            }
+                // 1. Canthal Tilt
+                // Avg of both eyes
+                const tiltL = (Math.atan2(l_ex.y - l_en.y, l_ex.x - l_en.x) * 180 / Math.PI) * -1;
+                const tiltR = (Math.atan2(r_ex.y - r_en.y, r_ex.x - r_en.x) * 180 / Math.PI) * -1;
+                const avgTilt = (tiltL + tiltR) / 2;
+                html += createCard("Canthal Tilt", `${avgTilt.toFixed(1)}°`, getTier(avgTilt, [4, 8], [0, 12]));
 
-            try {
-                // Determine Profile Type
-                const nose = landmarks[1];
-                const leftCheek = landmarks[234];
-                const rightCheek = landmarks[454];
-                const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+                // 2. Facial Thirds
+                const upper = dist(hairline, glabella);
+                const mid = dist(glabella, subnasale);
+                const lower = dist(subnasale, menton);
+                const total = upper + mid + lower;
                 
-                let html = "";
-                
-                // --- SIDE PROFILE ---
-                // If nose is outside cheeks or face is very narrow
-                if (faceWidth < 0.2 || nose.x < leftCheek.x || nose.x > rightCheek.x) {
-                    let side = (nose.x < 0.5) ? "Left" : "Right";
-                    // Indices: Ear, Jaw, Chin
-                    let idx = (side === "Left") ? [361, 397, 152] : [132, 172, 152];
-                    
-                    const A = landmarks[idx[0]]; // Ear
-                    const B = landmarks[idx[1]]; // Jaw
-                    const C = landmarks[idx[2]]; // Chin
+                const upP = (upper/total*100).toFixed(1);
+                const midP = (mid/total*100).toFixed(1);
+                const lowP = (lower/total*100).toFixed(1);
 
-                    // Gonial Angle
-                    let angle = getAngle(A, B, C);
-                    let [tierName, tierClass] = getTier(angle, 115, 125, 105, 135);
-                    
-                    // Ramus Ratio
-                    let ramus = getDist(A, B);
-                    let mand = getDist(B, C);
-                    let ratio = ramus / mand;
-                    let [rName, rClass] = getTier(ratio, 0.6, 0.8, 0.5, 0.9);
+                // Ideal is 33-33-33 roughly
+                let thirdsTier = "TIER B";
+                if(Math.abs(33.3 - midP) < 2 && Math.abs(33.3 - lowP) < 2) thirdsTier = `<span class="tier-s">TIER S (Perfect Balance)</span>`;
+                else if(Math.abs(33.3 - midP) < 4) thirdsTier = `<span class="tier-a">TIER A</span>`;
+                else thirdsTier = `<span class="tier-b">TIER B</span>`;
 
-                    html += `<h4>${side} Profile Detected</h4>`;
-                    html += `<p>Gonial Angle: <strong>${angle.toFixed(1)}°</strong> <span class="${tierClass}">${tierName}</span></p>`;
-                    html += `<p>Ramus/Mandible: <strong>${ratio.toFixed(2)}</strong> <span class="${rClass}">${rName}</span></p>`;
+                html += createCard("Facial Thirds", `Upper: ${upP}% | Mid: ${midP}% | Lower: ${lowP}%`, thirdsTier);
 
-                } 
-                // --- FRONT PROFILE ---
-                else {
-                    // Canthal Tilt
-                    const outer = landmarks[33];
-                    const inner = landmarks[133];
-                    let tilt = (Math.atan2(outer.y - inner.y, outer.x - inner.x) * 180 / Math.PI) * -1;
-                    let [tName, tClass] = getTier(tilt, 5, 10, 0, 15);
+                // 3. Eye Spacing Ratio (ESR)
+                const innerDist = dist(l_en, r_en);
+                const faceWidth = dist(l_zygo, r_zygo);
+                const esr = (innerDist / faceWidth) * 100;
+                html += createCard("Eye Separation Ratio", `${esr.toFixed(1)}%`, getTier(esr, [45, 47], [42, 50]));
 
-                    // Eye Separation Ratio
-                    let innerEyeDist = getDist(landmarks[133], landmarks[362]);
-                    let faceW_px = getDist(landmarks[234], landmarks[454]);
-                    let esr = (innerEyeDist / faceW_px) * 100;
-                    let [eName, eClass] = getTier(esr, 45, 47, 42, 50);
+                // 4. FWHR (Facial Width to Height)
+                // Approx height: Nasion to Menton (using glabella here as approx top of midface)
+                const faceHeight = dist(glabella, menton); 
+                const fwhr = faceWidth / faceHeight;
+                html += createCard("Midface FWHR", `${fwhr.toFixed(2)}`, getTier(fwhr, [1.8, 2.0], [1.7, 2.1]));
 
-                    html += `<h4>Front Profile Detected</h4>`;
-                    html += `<p>Canthal Tilt: <strong>${tilt.toFixed(1)}°</strong> <span class="${tClass}">${tName}</span></p>`;
-                    html += `<p>Eye Separation: <strong>${esr.toFixed(1)}%</strong> <span class="${eClass}">${eName}</span></p>`;
-                }
+            } else {
+                // SIDE PROFILE
+                const gonion = getPt("gonion"), tragion = getPt("tragion"), menton = getPt("menton");
+                const glabella = getPt("glabella"), pogonion = getPt("pogonion");
+                const nasion = getPt("nasion");
 
-                // Show Report
-                metricsDiv.innerHTML = html;
-                reportBox.style.display = 'block';
-                log("Analysis Complete.");
+                // 1. Gonial Angle
+                const gAngle = angle(tragion, gonion, menton);
+                html += createCard("Gonial Angle", `${gAngle.toFixed(1)}°`, getTier(gAngle, [118, 128], [110, 135]));
 
-            } catch (err) {
-                log("Math Error: " + err.message);
-                console.error(err);
+                // 2. Ramus/Mandible Ratio
+                const ramus = dist(tragion, gonion);
+                const mandible = dist(gonion, menton);
+                const ratio = ramus / mandible;
+                html += createCard("Ramus/Mandible Ratio", `${ratio.toFixed(2)}`, getTier(ratio, [0.65, 0.85], [0.55, 0.95]));
+
+                // 3. Facial Convexity (Glabella - Subnasale - Pogonion) -> Roughly
+                // We'll use Glabella - Nasion - Pogonion for general projection check
+                const convAngle = angle(glabella, nasion, pogonion);
+                html += createCard("Facial Convexity (Est)", `${convAngle.toFixed(1)}°`, getTier(convAngle, [165, 175], [160, 180]));
             }
+
+            container.innerHTML = html;
+            document.getElementById('report').style.display = 'block';
+        }
+
+        function createCard(title, value, tier) {
+            return `
+            <div class="metric-card">
+                <div>
+                    <div class="metric-name">${title}</div>
+                    <div style="font-size:0.9em; color:#888;">Measured Value: ${value}</div>
+                </div>
+                <div>${tier}</div>
+            </div>`;
         }
     </script>
 </body>
