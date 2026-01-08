@@ -3,226 +3,249 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FACE IQ: IMMERSION EDITION</title>
+    <title>FACE IQ: PLATINUM ARCHITECT</title>
     <style>
         :root {
-            --bg: #050505;
-            --panel: rgba(10, 10, 10, 0.9);
+            --bg: #030303;
+            --glass: rgba(10, 10, 10, 0.95);
             --border: 1px solid rgba(255, 255, 255, 0.1);
-            --accent: #00f0ff;
-            --active-red: #ff2a2a;
-            --gold: #ffc800;
-            --text: #ececec;
+            --accent: #00f3ff;
+            --accent-dim: rgba(0, 243, 255, 0.1);
+            --red: #ff2a2a;
+            --gold: #ffd700;
+            --green: #00ff9d;
             --font-ui: 'Segoe UI', system-ui, sans-serif;
-            --font-mono: 'Courier New', monospace;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
         }
 
         * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         body {
             background-color: var(--bg);
-            color: var(--text);
+            color: #fff;
             font-family: var(--font-ui);
             margin: 0;
-            display: flex;
             height: 100vh;
             overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
         }
 
-        /* --- LEFT SIDEBAR (CONTROLS) --- */
-        .sidebar {
-            width: 320px;
-            background: var(--panel);
+        /* --- LAYOUT --- */
+        #app { display: flex; height: 100%; width: 100%; position: relative; }
+
+        /* --- LEFT BAR (TOOLS) --- */
+        .toolbar {
+            width: 300px;
+            background: var(--glass);
             border-right: var(--border);
+            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            padding: 20px;
             z-index: 50;
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s ease;
+            backdrop-filter: blur(20px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .brand {
-            color: var(--accent);
             font-family: var(--font-mono);
+            color: var(--accent);
             font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
             font-weight: 800;
+            letter-spacing: 3px;
             text-align: center;
-            padding-bottom: 15px;
+            padding-bottom: 20px;
             border-bottom: var(--border);
+            text-shadow: 0 0 15px var(--accent);
         }
 
-        /* Control Buttons */
-        .btn-group { display: flex; gap: 8px; background: #000; padding: 4px; border-radius: 6px; border: var(--border); }
-        .btn-toggle {
+        .ctrl-row { display: flex; gap: 8px; background: #000; padding: 4px; border-radius: 8px; border: var(--border); }
+        .btn {
             flex: 1; background: transparent; color: #666; border: none; padding: 10px;
             cursor: pointer; font-weight: 700; border-radius: 4px; transition: 0.2s;
+            font-size: 0.75rem;
         }
-        .btn-toggle.active { background: #222; color: var(--accent); box-shadow: 0 0 15px rgba(0, 240, 255, 0.15); }
+        .btn.active { background: #1a1a1a; color: var(--accent); box-shadow: 0 0 15px var(--accent-dim); }
 
-        .upload-box {
+        .upload-btn {
             border: 1px dashed #444; border-radius: 8px; padding: 25px;
             text-align: center; cursor: pointer; transition: 0.2s;
-            background: rgba(255,255,255,0.02);
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
         }
-        .upload-box:hover { border-color: var(--accent); background: rgba(0, 240, 255, 0.05); }
+        .upload-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
 
-        /* Reference SVG */
-        .ref-box {
+        /* SVG MAP */
+        .map-box {
             flex: 1; background: #000; border: var(--border); border-radius: 8px;
-            position: relative; padding: 10px; min-height: 250px;
+            position: relative; padding: 10px; min-height: 200px;
         }
-        #ref-svg { width: 100%; height: 100%; opacity: 0.5; transition: opacity 0.3s; }
-        .svg-active { fill: var(--active-red); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 8px var(--active-red)); }
-        
-        .instruction {
-            background: rgba(0,240,255,0.1); border-left: 3px solid var(--accent);
-            padding: 10px; margin-top: 10px; border-radius: 0 4px 4px 0;
-        }
-        #step-txt { color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+        #svg-map { width: 100%; height: 100%; opacity: 0.4; transition: opacity 0.3s; }
+        .zone { fill: #111; stroke: #333; stroke-width: 1; transition: 0.2s; }
+        .zone.active { fill: var(--red); stroke: #fff; stroke-width: 2; filter: drop-shadow(0 0 8px var(--red)); opacity: 1; }
 
-        /* --- MAIN VIEWPORT (CANVAS) --- */
+        .step-display {
+            border-left: 3px solid var(--accent);
+            padding-left: 15px; margin-top: 5px;
+        }
+        #step-name { color: var(--accent); font-weight: 800; font-family: var(--font-mono); font-size: 0.9rem; }
+        #step-desc { font-size: 0.8rem; color: #888; }
+
+        /* --- MAIN VIEWPORT --- */
         .viewport {
-            flex: 1;
-            position: relative;
-            background: #080808;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            box-shadow: inset 0 0 100px #000;
+            flex: 1; position: relative; background: radial-gradient(circle at center, #111, #000);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
-        canvas { display: block; max-width: 98%; max-height: 98%; cursor: none; }
+        canvas { display: block; max-width: 95%; max-height: 95%; cursor: none; box-shadow: 0 0 50px #000; border-radius: 4px; }
 
-        /* SNIPER LENS (Top Layer) */
+        /* LENS */
         #lens {
-            position: absolute; width: 200px; height: 200px;
+            position: absolute; width: 220px; height: 220px;
             border: 2px solid var(--accent); border-radius: 50%;
             pointer-events: none; display: none; overflow: hidden;
-            background: #000; z-index: 9999; /* Max Z-Index */
+            background: #000; z-index: 9999;
             box-shadow: 0 0 50px rgba(0,0,0,1);
         }
         #lens-cross {
             position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-            transform: translate(-50%, -50%); opacity: 0.6;
             background: 
-                linear-gradient(to right, transparent 49.5%, var(--active-red) 49.5%, var(--active-red) 50.5%, transparent 50.5%),
-                linear-gradient(to bottom, transparent 49.5%, var(--active-red) 49.5%, var(--active-red) 50.5%, transparent 50.5%);
+                linear-gradient(to right, transparent 49.5%, var(--red) 49.5%, var(--red) 50.5%, transparent 50.5%),
+                linear-gradient(to bottom, transparent 49.5%, var(--red) 49.5%, var(--red) 50.5%, transparent 50.5%);
+            transform: translate(-50%, -50%); opacity: 0.8;
         }
 
-        /* --- RIGHT DRAWER (RESULTS) --- */
+        /* --- RESULTS DRAWER --- */
         .drawer {
-            position: fixed; top: 0; right: -400px; width: 380px; height: 100%;
-            background: rgba(10, 10, 10, 0.95); border-left: var(--border);
-            backdrop-filter: blur(20px); z-index: 60;
-            transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: fixed; top: 0; right: -450px; width: 420px; height: 100%;
+            background: rgba(8, 8, 8, 0.98); border-left: var(--border);
+            backdrop-filter: blur(25px); z-index: 100;
+            transition: right 0.4s cubic-bezier(0.1, 0.8, 0.1, 1);
             display: flex; flex-direction: column;
-            box-shadow: -10px 0 50px rgba(0,0,0,0.5);
+            box-shadow: -20px 0 50px #000;
         }
         .drawer.open { right: 0; }
 
-        .drawer-header {
+        .drawer-head {
             padding: 20px; border-bottom: var(--border);
             display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.02);
         }
-        .close-btn { background: none; border: none; color: #666; font-size: 1.5rem; cursor: pointer; }
-        .close-btn:hover { color: #fff; }
+        .drawer-title { font-family: var(--font-mono); color: var(--accent); font-weight: 700; letter-spacing: 1px; }
+        .close-icon { cursor: pointer; color: #666; font-size: 1.5rem; transition: 0.2s; }
+        .close-icon:hover { color: #fff; }
 
-        .results-content { flex: 1; overflow-y: auto; padding: 20px; }
+        .drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
 
         /* Metric Cards */
-        .card {
-            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-            padding: 15px; margin-bottom: 10px; border-radius: 6px;
-            cursor: pointer; transition: 0.2s; position: relative;
+        .metric {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 6px; padding: 15px; margin-bottom: 10px;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: all 0.2s;
         }
-        .card:hover { background: rgba(255,255,255,0.07); transform: translateX(-5px); }
-        .card.active { border-color: var(--accent); background: rgba(0, 240, 255, 0.05); }
-        .card.active::before { content:''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+        .metric:hover { background: rgba(255,255,255,0.05); transform: translateX(-5px); }
+        .metric.active { 
+            border-color: var(--accent); 
+            background: linear-gradient(90deg, rgba(0,243,255,0.1), transparent);
+        }
+        .metric.active::before {
+            content:''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent);
+        }
 
-        .card-head { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .card-title { font-size: 0.75rem; color: #888; text-transform: uppercase; font-weight: 700; }
-        .card-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: #fff; }
+        .m-top { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .m-title { font-size: 0.7rem; color: #888; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .m-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: #fff; }
         
-        .tier { padding: 2px 6px; border-radius: 3px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-        .t1 { background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(255, 200, 0, 0.4); }
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
+        .t1 { background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(255, 200, 0, 0.3); }
         .t2 { background: var(--green); color: #000; }
-        .t3 { background: #333; color: #ccc; }
-        .tf { background: var(--active-red); color: #fff; }
+        .t3 { background: #444; color: #ccc; }
+        .tf { background: var(--red); color: #fff; }
 
         /* Undo Fab */
         .undo-fab {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #111; color: var(--active-red); border: 1px solid #333;
-            padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: 700;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 40; display: none;
+            background: #000; color: var(--red); border: 1px solid var(--red);
+            padding: 12px 24px; border-radius: 50px; font-weight: 700; font-size: 0.9rem;
+            cursor: pointer; z-index: 60; box-shadow: 0 5px 20px #000; display: none;
+            transition: 0.2s;
         }
+        .undo-fab:hover { background: var(--red); color: #fff; }
 
         /* Mobile */
         @media (max-width: 900px) {
-            .sidebar { position: absolute; left: -320px; height: 100%; transition: left 0.3s; }
-            .sidebar.show { left: 0; }
+            .sidebar { position: absolute; height: 100%; left: -320px; transition: left 0.3s; }
+            .sidebar.active { left: 0; }
             .drawer { width: 100%; right: -100%; }
-            .mobile-toggle { display: block; position: absolute; top: 20px; left: 20px; z-index: 200; background: #000; border: 1px solid #333; padding: 10px; border-radius: 6px; color: #fff; }
+            .mobile-menu { display: block; position: absolute; top: 15px; left: 15px; z-index: 200; background: #000; padding: 10px; border-radius: 6px; border: var(--border); }
         }
+        .mobile-menu { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar" id="sidebar">
-        <div class="brand">FACE IQ <span style="font-size:0.5em; color:#fff">PRO</span></div>
+<div id="app">
+    <button class="mobile-menu" onclick="document.querySelector('.sidebar').classList.toggle('active')">☰ MENU</button>
+
+    <div class="sidebar">
+        <div class="brand">FACE IQ <span style="font-size:0.5em; vertical-align: super; color:#fff;">PLATINUM</span></div>
         
-        <div class="btn-group">
-            <button class="btn-toggle active" id="m-front" onclick="setMode('front')">FRONT</button>
-            <button class="btn-toggle" id="m-side" onclick="setMode('side')">SIDE</button>
+        <div class="ctrl-row">
+            <button class="btn active" id="m-front" onclick="setMode('front')">FRONT</button>
+            <button class="btn" id="m-side" onclick="setMode('side')">SIDE</button>
         </div>
-        <div class="btn-group">
-            <button class="btn-toggle active" id="g-male" onclick="setGender('male')">MALE</button>
-            <button class="btn-toggle" id="g-female" onclick="setGender('female')">FEMALE</button>
+        <div class="ctrl-row">
+            <button class="btn active" id="g-male" onclick="setGender('male')">MALE</button>
+            <button class="btn" id="g-female" onclick="setGender('female')">FEMALE</button>
         </div>
 
-        <label class="upload-box">
-            <div style="font-size:1.5rem; color:var(--accent); margin-bottom:5px;">📷</div>
-            <div style="font-size:0.8rem; font-weight:700;">UPLOAD PHOTO</div>
+        <label class="upload-btn">
+            <div style="font-size:2rem; color:var(--accent);">⊕</div>
+            <div style="font-weight:700; font-size:0.8rem; margin-top:5px;">UPLOAD IMAGE</div>
             <input type="file" id="fileIn" accept="image/*" style="display:none">
         </label>
 
-        <div class="ref-box" id="ref-wrap" style="opacity:0.3; pointer-events:none;">
-            <svg id="ref-svg" viewBox="0 0 100 120">
-                <g id="svg-front" display="block">
-                    <path d="M20,30 Q15,60 20,80 Q25,100 50,110 Q75,100 80,80 Q85,60 80,30 Q50,10 20,30" fill="none" stroke="#333" stroke-width="1.5"/>
-                    <path id="z-eye-l" d="M25,45 Q35,40 45,45 Q35,50 25,45 Z" fill="#111" stroke="#444"/>
-                    <circle id="z-pupil-l" cx="35" cy="45" r="2" fill="#444"/>
-                    <path id="z-eye-r" d="M55,45 Q65,40 75,45 Q65,50 55,45 Z" fill="#111" stroke="#444"/>
-                    <circle id="z-pupil-r" cx="65" cy="45" r="2" fill="#444"/>
-                    <path id="z-nose" d="M50,45 L42,70 L58,70 Z" fill="none" stroke="#444"/>
-                    <path id="z-mouth" d="M35,85 Q50,82 65,85 Q50,95 35,85 Z" fill="none" stroke="#444"/>
-                    <circle id="z-men" cx="50" cy="110" r="4" fill="none" stroke="#444"/>
-                    <circle id="z-gon-l" cx="18" cy="75" r="4" fill="none" stroke="#444"/>
-                    <circle id="z-gon-r" cx="82" cy="75" r="4" fill="none" stroke="#444"/>
-                    <circle id="z-zygo-l" cx="15" cy="55" r="4" fill="none" stroke="#444"/>
-                    <circle id="z-zygo-r" cx="85" cy="55" r="4" fill="none" stroke="#444"/>
-                    <path id="z-brow-l" d="M23,38 Q35,32 47,38" fill="none" stroke="#444" stroke-width="3"/>
-                    <path id="z-brow-r" d="M53,38 Q65,32 77,38" fill="none" stroke="#444" stroke-width="3"/>
+        <div class="map-box" id="map-wrap" style="opacity:0.3; pointer-events:none;">
+            <svg id="svg-map" viewBox="0 0 100 120">
+                <g id="grp-front">
+                    <path d="M20,30 Q15,60 20,80 Q25,100 50,110 Q75,100 80,80 Q85,60 80,30 Q50,10 20,30" fill="none" stroke="#444" />
+                    <path id="z-eye-l" d="M25,45 Q35,40 45,45 Q35,50 25,45 Z" class="zone"/>
+                    <circle id="z-pupil-l" cx="35" cy="45" r="2" class="zone"/>
+                    <path id="z-eye-r" d="M55,45 Q65,40 75,45 Q65,50 55,45 Z" class="zone"/>
+                    <circle id="z-pupil-r" cx="65" cy="45" r="2" class="zone"/>
+                    <path id="z-nose" d="M50,45 L42,70 L58,70 Z" class="zone" fill="none"/>
+                    <path id="z-mouth" d="M35,85 Q50,82 65,85 Q50,95 35,85 Z" class="zone"/>
+                    <circle id="z-chin" cx="50" cy="110" r="4" class="zone" fill="none"/>
+                    <circle id="z-gon-l" cx="18" cy="75" r="4" class="zone" fill="none"/>
+                    <circle id="z-gon-r" cx="82" cy="75" r="4" class="zone" fill="none"/>
+                    <circle id="z-chin-l" cx="42" cy="105" r="3" class="zone" fill="none"/>
+                    <circle id="z-chin-r" cx="58" cy="105" r="3" class="zone" fill="none"/>
+                    <circle id="z-zygo-l" cx="15" cy="55" r="4" class="zone" fill="none"/>
+                    <circle id="z-zygo-r" cx="85" cy="55" r="4" class="zone" fill="none"/>
+                    <path id="z-brow-l" d="M23,38 Q35,32 47,38" class="zone" fill="none" stroke-width="3"/>
+                    <path id="z-brow-r" d="M53,38 Q65,32 77,38" class="zone" fill="none" stroke-width="3"/>
+                    <circle id="z-temp-l" cx="18" cy="35" r="3" class="zone" fill="none"/>
+                    <circle id="z-temp-r" cx="82" cy="35" r="3" class="zone" fill="none"/>
                 </g>
-                <g id="svg-side" display="none">
-                    <path d="M35,20 Q15,50 35,110 L65,110 Q75,90 65,70 L65,20 Z" fill="none" stroke="#333" stroke-width="1.5"/>
+                <g id="grp-side" display="none">
+                    <path d="M35,20 Q15,50 35,110 L65,110 Q75,90 65,70 L65,20 Z" fill="none" stroke="#444"/>
                     <path id="z-prof" d="M65,20 L70,40 L85,60 L75,75 L80,90 L65,110" fill="none" stroke="#444" stroke-width="2"/>
-                    <circle id="z-side-gla" cx="67" cy="40" r="3" fill="#111" stroke="#444"/>
-                    <circle id="z-side-nas" cx="65" cy="48" r="3" fill="#111" stroke="#444"/>
-                    <circle id="z-side-tip" cx="85" cy="60" r="3" fill="#111" stroke="#444"/>
-                    <circle id="z-side-pog" cx="80" cy="100" r="3" fill="#111" stroke="#444"/>
-                    <circle id="z-side-gon" cx="35" cy="85" r="4" fill="#111" stroke="#444"/>
-                    <circle id="z-side-ear" cx="30" cy="60" r="4" fill="#111" stroke="#444"/>
+                    <circle id="z-s-gla" cx="67" cy="40" r="3" class="zone"/>
+                    <circle id="z-s-nas" cx="65" cy="48" r="3" class="zone"/>
+                    <circle id="z-s-tip" cx="85" cy="60" r="3" class="zone"/>
+                    <circle id="z-s-pog" cx="80" cy="100" r="3" class="zone"/>
+                    <circle id="z-s-gon" cx="35" cy="85" r="4" class="zone"/>
+                    <circle id="z-s-ear" cx="30" cy="60" r="4" class="zone"/>
+                    <circle id="z-s-orb" cx="50" cy="50" r="3" class="zone"/>
                 </g>
             </svg>
             
-            <div class="instruction">
-                <div id="step-txt">IDLE</div>
-                <div style="font-size:0.8rem; color:#888;">Load image to start</div>
+            <div class="step-display">
+                <div id="step-name">SYSTEM IDLE</div>
+                <div id="step-desc">Load an image to begin protocol</div>
             </div>
         </div>
     </div>
@@ -230,74 +253,79 @@
     <div class="viewport">
         <canvas id="cvs"></canvas>
         <div id="lens"><div id="lens-cross"></div></div>
-        <button class="undo-fab" onclick="undo()" id="undo-btn">↩ UNDO</button>
+        <button class="undo-fab" id="undo-btn" onclick="undo()">↩ UNDO POINT</button>
     </div>
 
     <div class="drawer" id="drawer">
-        <div class="drawer-header">
-            <span style="color:#fff; font-weight:700; letter-spacing:1px;">ANALYSIS REPORT</span>
-            <button class="close-btn" onclick="toggleDrawer(false)">×</button>
+        <div class="drawer-head">
+            <div class="drawer-title">BIOMETRIC DATA</div>
+            <div class="close-icon" onclick="toggleDrawer(false)">×</div>
         </div>
-        <div class="results-content" id="metrics-list"></div>
+        <div class="drawer-body" id="res-list"></div>
     </div>
+</div>
 
 <script>
     const cvs = document.getElementById('cvs');
     const ctx = cvs.getContext('2d');
     const lens = document.getElementById('lens');
-    const lensCvs = document.createElement('canvas'); // Offscreen buffer
-    lensCvs.width = 200; lensCvs.height = 200;
-    const lCtx = lensCvs.getContext('2d');
+    const lCvs = document.createElement('canvas'); lCvs.width=220; lCvs.height=220;
+    const lCtx = lCvs.getContext('2d');
 
     const state = {
         img: null,
         mode: 'front',
         gender: 'male',
         points: [],
-        activeResult: null,
+        activeMetric: null,
         scale: 1
     };
 
-    // --- MAPS ---
-    const STEPS = {
+    // --- LANDMARKS (Updated with Chin Corners) ---
+    const MAPS = {
         front: [
             { id: 'p_l', txt: 'Left Pupil', z: 'z-pupil-l' },
             { id: 'p_r', txt: 'Right Pupil', z: 'z-pupil-r' },
             { id: 'z_l', txt: 'Left Zygoma (Widest)', z: 'z-zygo-l' },
             { id: 'z_r', txt: 'Right Zygoma (Widest)', z: 'z-zygo-r' },
-            { id: 'g_l', txt: 'Left Gonion (Jaw)', z: 'z-gon-l' },
-            { id: 'g_r', txt: 'Right Gonion (Jaw)', z: 'z-gon-r' },
-            { id: 'men', txt: 'Menton (Chin)', z: 'z-men' },
-            { id: 'ic_l', txt: 'Left Inner Eye', z: 'z-eye-l' },
-            { id: 'oc_l', txt: 'Left Outer Eye', z: 'z-eye-l' },
-            { id: 'ic_r', txt: 'Right Inner Eye', z: 'z-eye-r' },
-            { id: 'oc_r', txt: 'Right Outer Eye', z: 'z-eye-r' },
-            { id: 'al_l', txt: 'Left Nostril Edge', z: 'z-nose' },
-            { id: 'al_r', txt: 'Right Nostril Edge', z: 'z-nose' },
+            { id: 'g_l', txt: 'Left Gonion (Jaw Angle)', z: 'z-gon-l' },
+            { id: 'g_r', txt: 'Right Gonion (Jaw Angle)', z: 'z-gon-r' },
+            { id: 'men', txt: 'Menton (Chin Bottom)', z: 'z-chin' },
+            { id: 'cc_l', txt: 'Left Chin Corner', z: 'z-chin-l' },
+            { id: 'cc_r', txt: 'Right Chin Corner', z: 'z-chin-r' },
+            { id: 'ic_l', txt: 'Left Inner Canthus', z: 'z-eye-l' },
+            { id: 'oc_l', txt: 'Left Outer Canthus', z: 'z-eye-l' },
+            { id: 'ic_r', txt: 'Right Inner Canthus', z: 'z-eye-r' },
+            { id: 'oc_r', txt: 'Right Outer Canthus', z: 'z-eye-r' },
+            { id: 'al_l', txt: 'Left Alar (Nostril)', z: 'z-nose' },
+            { id: 'al_r', txt: 'Right Alar (Nostril)', z: 'z-nose' },
             { id: 'mc_l', txt: 'Left Mouth Corner', z: 'z-mouth' },
             { id: 'mc_r', txt: 'Right Mouth Corner', z: 'z-mouth' },
-            { id: 'br_in_l', txt: 'L Brow Inner', z: 'z-brow-l' },
-            { id: 'br_out_l', txt: 'L Brow Outer', z: 'z-brow-l' },
-            { id: 'br_in_r', txt: 'R Brow Inner', z: 'z-brow-r' },
-            { id: 'br_out_r', txt: 'R Brow Outer', z: 'z-brow-r' },
-            { id: 'hair', txt: 'Hairline', z: 'z-brow-l' },
+            { id: 'br_il', txt: 'L Brow Inner', z: 'z-brow-l' },
+            { id: 'br_ol', txt: 'L Brow Outer', z: 'z-brow-l' },
+            { id: 'br_ir', txt: 'R Brow Inner', z: 'z-brow-r' },
+            { id: 'br_or', txt: 'R Brow Outer', z: 'z-brow-r' },
+            { id: 'hair', txt: 'Hairline Center', z: 'grp-front' },
             { id: 'gla', txt: 'Glabella', z: 'z-brow-l' },
             { id: 'sn', txt: 'Nose Base', z: 'z-nose' },
-            { id: 'ls', txt: 'Top Lip', z: 'z-mouth' },
-            { id: 'li', txt: 'Bot Lip', z: 'z-mouth' }
+            { id: 'ls', txt: 'Lip Top', z: 'z-mouth' },
+            { id: 'li', txt: 'Lip Bottom', z: 'z-mouth' },
+            { id: 't_l', txt: 'Left Temple', z: 'z-temp-l' },
+            { id: 't_r', txt: 'Right Temple', z: 'z-temp-r' }
         ],
         side: [
-            { id: 'gla', txt: 'Glabella', z: 'z-side-gla' },
-            { id: 'nas', txt: 'Nasion (Dip)', z: 'z-side-nas' },
-            { id: 'prn', txt: 'Nose Tip', z: 'z-side-tip' },
-            { id: 'sn', txt: 'Nose Base', z: 'z-side-nas' },
-            { id: 'ls', txt: 'Top Lip', z: 'z-prof' },
-            { id: 'li', txt: 'Bot Lip', z: 'z-prof' },
-            { id: 'pog', txt: 'Chin Tip', z: 'z-side-pog' },
-            { id: 'men', txt: 'Chin Bot', z: 'z-side-men' },
-            { id: 'gon', txt: 'Jaw Angle', z: 'z-side-gon' },
-            { id: 'tra', txt: 'Ear Hole', z: 'z-side-ear' },
-            { id: 'orb', txt: 'Under Eye', z: 'z-side-nas' }
+            { id: 'gla', txt: 'Glabella', z: 'z-s-gla' },
+            { id: 'nas', txt: 'Nasion', z: 'z-s-nas' },
+            { id: 'prn', txt: 'Nose Tip', z: 'z-s-tip' },
+            { id: 'sn', txt: 'Nose Base', z: 'z-s-nas' },
+            { id: 'ls', txt: 'Lip Top', z: 'z-prof' },
+            { id: 'li', txt: 'Lip Bot', z: 'z-prof' },
+            { id: 'pog', txt: 'Chin Tip', z: 'z-s-pog' },
+            { id: 'men', txt: 'Chin Bot', z: 'z-s-men' },
+            { id: 'gon', txt: 'Jaw Angle', z: 'z-s-gon' },
+            { id: 'tra', txt: 'Ear Hole', z: 'z-s-ear' },
+            { id: 'orb', txt: 'Under Eye', z: 'z-s-orb' },
+            { id: 'cerv', txt: 'Throat Point', z: 'grp-side' }
         ]
     };
 
@@ -311,30 +339,29 @@
         state.img.src = URL.createObjectURL(e.target.files[0]);
         state.img.onload = () => {
             state.points = [];
-            toggleDrawer(false);
-            document.getElementById('ref-wrap').style.opacity = 1;
-            document.getElementById('ref-wrap').style.pointerEvents = 'auto';
+            document.getElementById('map-wrap').style.opacity = 1;
+            document.getElementById('map-wrap').style.pointerEvents = 'auto';
             document.getElementById('undo-btn').style.display = 'block';
+            toggleDrawer(false);
             resize();
-            uiUpdate();
+            ui();
             draw();
         };
     }
 
     function setMode(m) {
-        state.mode = m; state.points = [];
-        document.getElementById('m-front').className = m==='front'?'btn-toggle active':'btn-toggle';
-        document.getElementById('m-side').className = m==='side'?'btn-toggle active':'btn-toggle';
-        document.getElementById('svg-front').setAttribute('display', m==='front'?'block':'none');
-        document.getElementById('svg-side').setAttribute('display', m==='side'?'block':'none');
-        toggleDrawer(false);
-        uiUpdate(); draw();
+        state.mode = m; state.points = []; toggleDrawer(false);
+        document.getElementById('m-front').className = m==='front'?'btn active':'btn';
+        document.getElementById('m-side').className = m==='side'?'btn active':'btn';
+        document.getElementById('grp-front').setAttribute('display', m==='front'?'block':'none');
+        document.getElementById('grp-side').setAttribute('display', m==='side'?'block':'none');
+        ui(); draw();
     }
 
     function setGender(g) {
         state.gender = g;
-        document.getElementById('g-male').className = g==='male'?'btn-toggle active':'btn-toggle';
-        document.getElementById('g-female').className = g==='female'?'btn-toggle active':'btn-toggle';
+        document.getElementById('g-male').className = g==='male'?'btn active':'btn';
+        document.getElementById('g-female').className = g==='female'?'btn active':'btn';
         if(isDone()) calc();
     }
 
@@ -349,11 +376,9 @@
         state.scale = w / state.img.width;
     }
 
-    function undo() { state.points.pop(); state.activeResult = null; toggleDrawer(false); uiUpdate(); draw(); }
-    function isDone() { return state.points.length === STEPS[state.mode].length; }
-    function toggleDrawer(open) { 
-        document.getElementById('drawer').className = open ? 'drawer open' : 'drawer'; 
-    }
+    function undo() { state.points.pop(); state.activeMetric = null; toggleDrawer(false); ui(); draw(); }
+    function isDone() { return state.points.length === MAPS[state.mode].length; }
+    function toggleDrawer(open) { document.getElementById('drawer').className = open ? 'drawer open' : 'drawer'; }
 
     // --- INTERACTION ---
     cvs.addEventListener('mousemove', e => handle(e, false));
@@ -374,47 +399,43 @@
         const r = cvs.getBoundingClientRect();
         const x = (e.clientX || e.pageX) - r.left;
         const y = (e.clientY || e.pageY) - r.top;
-
         if(isClick) { click(x, y); return; }
 
-        // Render Lens
         lens.style.display = 'block';
         lens.style.left = (e.clientX + 30) + 'px';
-        lens.style.top = (e.clientY - 100) + 'px';
+        lens.style.top = (e.clientY - 120) + 'px';
         
         const z = 3;
         const sX = x / state.scale;
         const sY = y / state.scale;
-        const sW = 200 / z;
-        const sH = 200 / z;
-        
-        lCtx.fillStyle = '#000'; lCtx.fillRect(0,0,200,200);
-        lCtx.drawImage(state.img, sX - sW/2, sY - sH/2, sW, sH, 0, 0, 200, 200);
-        lens.style.backgroundImage = `url(${lensCvs.toDataURL()})`;
+        const sW = 220 / z;
+        const sH = 220 / z;
+        lCtx.fillStyle = '#000'; lCtx.fillRect(0,0,220,220);
+        lCtx.drawImage(state.img, sX - sW/2, sY - sH/2, sW, sH, 0, 0, 220, 220);
+        lens.style.backgroundImage = `url(${lCvs.toDataURL()})`;
     }
 
     function click(x, y) {
         if(isDone()) return;
         state.points.push({x, y});
-        uiUpdate(); draw();
+        ui(); draw();
         if(isDone()) calc();
     }
 
-    // --- UI LOGIC ---
-    function uiUpdate() {
-        const list = STEPS[state.mode];
+    function ui() {
+        const list = MAPS[state.mode];
         const idx = state.points.length;
+        document.querySelectorAll('.zone').forEach(el => el.classList.remove('active'));
         
-        // Clear SVG highlights
-        document.querySelectorAll('[id^="z-"]').forEach(el => el.classList.remove('svg-active'));
-
         if(idx < list.length) {
             const step = list[idx];
-            document.getElementById('step-txt').innerHTML = `STEP ${idx+1}: <span style="color:#fff">${step.txt}</span>`;
-            const zone = document.getElementById(step.z);
-            if(zone) zone.classList.add('svg-active');
+            document.getElementById('step-name').innerHTML = `STEP ${idx+1}: <span style="color:#fff">${step.txt}</span>`;
+            document.getElementById('step-desc').innerText = "Place point precisely.";
+            const z = document.getElementById(step.z);
+            if(z) z.classList.add('active');
         } else {
-            document.getElementById('step-txt').innerText = "CALCULATING...";
+            document.getElementById('step-name').innerText = "COMPLETE";
+            document.getElementById('step-desc').innerText = "View results in drawer.";
         }
     }
 
@@ -423,76 +444,67 @@
         if(!state.img) return;
         ctx.drawImage(state.img, 0, 0, cvs.width, cvs.height);
 
-        // Lines (Only if active result selected)
-        if(isDone() && state.activeResult) {
-            drawLines(state.activeResult);
-        }
+        if(state.activeMetric && isDone()) drawLines(state.activeMetric);
 
-        // Points
         state.points.forEach((p, i) => {
             ctx.beginPath();
-            ctx.fillStyle = (i === state.points.length && !isDone()) ? 'var(--active-red)' : 'var(--accent)';
+            ctx.fillStyle = (i === state.points.length && !isDone()) ? 'var(--red)' : 'var(--accent)';
             ctx.arc(p.x, p.y, 2.5, 0, Math.PI*2);
             ctx.fill();
-            if(i === state.points.length - 1) { // Pulse
-                ctx.strokeStyle = 'rgba(255, 50, 50, 0.5)';
-                ctx.lineWidth = 8;
-                ctx.stroke();
-            }
         });
     }
 
     function drawLines(id) {
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = 'var(--accent)';
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = 'var(--accent)';
+        ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = 'var(--accent)';
+        ctx.shadowBlur = 15; ctx.shadowColor = 'var(--accent)';
         ctx.beginPath();
         
         const m = state.mode;
-        // Logic for lines based on ID
-        if(m==='front') {
+        // MAPS Indices: 
+        // FRONT: 0-1 Pupils, 2-3 Zygo, 4-5 Gon, 6 Men, 7-8 ChinCorn, 9-12 Eyes, 13-14 Alar, 15-16 Mouth, 17-20 Brow, 21 Hair, 22 Gla, 23 Sn, 24-25 Lips, 26-27 Temp
+        if(m === 'front') {
             if(id==='ESR') { ln(0,1); ln(2,3); }
-            if(id==='CANTHAL') { ln(7,8); ln(9,10); }
-            if(id==='FWHR') { ln(2,3); ln(20,22); }
-            if(id==='JAW') { ln(4,6); ln(6,5); }
+            if(id==='FWHR') { ln(2,3); ln(22,24); }
+            if(id==='CANTH') { ln(9,10); ln(11,12); }
+            if(id==='JAW') { ln(4,7); ln(7,6); ln(5,8); ln(8,6); } // Gon->ChinCorner->Men
             if(id==='BIG') { ln(4,5); ln(2,3); }
-            if(id==='MN') { ln(13,14); ln(11,12); }
-            if(id==='CP') { ln(22,23); ln(23,6); }
-            if(id==='THIRDS') { ln(19,20); ln(20,21); ln(21,6); }
+            if(id==='MN') { ln(15,16); ln(13,14); }
+            if(id==='CHIN') { ln(25,6); ln(23,24); }
+            if(id==='TEMP') { ln(26,27); ln(2,3); }
+            if(id==='EAR') { ln(9,10); ln(11,12); } // Approx eye aspect
+            if(id==='BROW') { ln(17,18); ln(19,20); }
+            if(id==='THIRD') { ln(21,22); ln(22,23); ln(23,6); }
         } else {
+            // SIDE: 8 Gon, 9 Tra, 7 Men, 0 Gla, 3 Sn, 6 Pog, 1 Nas, 2 Tip
             if(id==='GON') { ln(9,8); ln(8,7); }
             if(id==='NASO') { ln(0,1); ln(1,2); }
             if(id==='CONV') { ln(0,3); ln(3,6); }
-            if(id==='RAMUS') { ln(9,8); ln(8,7); }
+            if(id==='RAM') { ln(9,8); ln(8,7); }
             if(id==='PROJ') { ln(1,2); ln(1,7); }
+            if(id==='MAN') { ln(7,8); ln(9,10); } // Jaw vs Frankfort (Tra-Orb)
         }
-        ctx.stroke();
-        ctx.shadowBlur = 0;
+        ctx.stroke(); ctx.shadowBlur = 0;
     }
-    
     function ln(a, b) { ctx.moveTo(state.points[a].x, state.points[a].y); ctx.lineTo(state.points[b].x, state.points[b].y); }
 
     // --- MATH ---
     function dist(a, b) { return Math.hypot(state.points[a].x - state.points[b].x, state.points[a].y - state.points[b].y); }
+    function slope(a, b) { return Math.atan2(state.points[a].y - state.points[b].y, Math.abs(state.points[b].x - state.points[a].x)) * 180 / Math.PI; }
     function angle(p1, p2, p3) {
         const a = dist(p2, p1), b = dist(p2, p3), c = dist(p1, p3);
         return Math.acos((a*a + b*b - c*c)/(2*a*b)) * (180/Math.PI);
     }
-    function slope(a, b) {
-        return Math.atan2(state.points[a].y - state.points[b].y, Math.abs(state.points[b].x - state.points[a].x)) * 180 / Math.PI;
-    }
 
-    // --- RESULTS ---
+    // --- CALC ---
     function calc() {
-        const c = document.getElementById('metrics-list');
-        c.innerHTML = "";
+        const list = document.getElementById('res-list');
+        list.innerHTML = "";
         const m = state.mode;
         const male = state.gender === 'male';
 
         const add = (id, title, val, tiers) => {
             let label = "FAIL", cls = "tf";
+            // Check Tiers sequentially (T1 -> T2 -> T3)
             for(let i=0; i<tiers.length; i++) {
                 if(val >= tiers[i][0] && val <= tiers[i][1]) {
                     label = `TIER ${i+1}`; 
@@ -500,61 +512,105 @@
                     break;
                 }
             }
-            const div = document.createElement('div');
-            div.className = 'card';
-            div.onclick = () => { 
-                document.querySelectorAll('.card').forEach(el=>el.classList.remove('active'));
-                div.classList.add('active');
-                state.activeResult = id;
+            // Logic for Fail? If not in any range.
+            
+            const d = document.createElement('div');
+            d.className = 'metric';
+            d.onclick = () => {
+                document.querySelectorAll('.metric').forEach(el=>el.classList.remove('active'));
+                d.classList.add('active');
+                state.activeMetric = id;
                 draw();
             };
-            div.innerHTML = `
-                <div class="card-head"><span class="card-title">${title}</span><span class="tier ${cls}">${label}</span></div>
-                <div class="card-val">${val}</div>`;
-            c.appendChild(div);
+            d.innerHTML = `
+                <div class="m-top"><span class="m-title">${title}</span><span class="badge ${cls}">${label}</span></div>
+                <div class="m-val">${val}</div>`;
+            list.appendChild(d);
         };
 
+        const round = (n) => Math.round(n * 100) / 100; // Round to 2 decimals
+
         if(m === 'front') {
-            const esr = (dist(0,1)/dist(2,3)*100);
-            add('ESR', 'Eye Separation', esr.toFixed(1)+'%', male ? [[44.3,47.7],[43.6,48.4]] : [[45,47.9],[44.3,48.6]]);
-            
-            const cant = (slope(7,8)+slope(9,10))/2;
-            add('CANTHAL', 'Canthal Tilt', cant.toFixed(1)+'°', male ? [[5.2,8.5],[4,9.7]] : [[6,9.6],[4.8,10.8]]);
-            
-            const fwhr = dist(2,3)/dist(20,22);
-            add('FWHR', 'FWHR', fwhr.toFixed(2), male ? [[1.9,2.06],[1.85,2.11]] : [[1.85,2.11],[1.8,2.16]]);
-            
-            const jaw = angle(4,6,5);
-            add('JAW', 'Jaw Angle', jaw.toFixed(1)+'°', male ? [[84.5,95],[80.5,99]] : [[86,97],[82.5,100.5]]);
-            
-            const big = (dist(4,5)/dist(2,3)*100);
-            add('BIG', 'Jaw Width', big.toFixed(1)+'%', male ? [[85.5,92],[83.5,94]] : [[81.5,88.5],[79.5,90.5]]);
-            
-            const mn = dist(13,14)/dist(11,12);
-            add('MN', 'Mouth-Nose', mn.toFixed(2), male ? [[1.38,1.53],[1.34,1.57]] : [[1.45,1.67],[1.4,1.72]]);
-            
-            const thirds = (dist(20,21)/(dist(19,20)+dist(20,21)+dist(21,6))*100);
-            add('THIRDS', 'Midface %', thirds.toFixed(1)+'%', male ? [[29.5,36.5],[28,38]] : [[30,36],[29.5,37.5]]);
-            
-            const cp = dist(23,6)/dist(21,22);
-            add('CP', 'Chin-Philtrum', cp.toFixed(2), male ? [[2.05,2.55],[1.87,2.73]] : [[2.0,2.5],[1.85,2.65]]);
+            // 1. ESR
+            const esr = round((dist(0,1) / dist(2,3)) * 100);
+            add('ESR', 'Eye Separation', esr+'%', male ? [[44.3,47.7],[43.6,48.4]] : [[45,47.9],[44.3,48.6]]);
+
+            // 2. Canthal
+            const cant = round((slope(9,10) + slope(11,12)) / 2);
+            add('CANTH', 'Canthal Tilt', cant+'°', male ? [[5.2,8.5],[4,9.7]] : [[6,9.6],[4.8,10.8]]);
+
+            // 3. FWHR
+            const fwhr = round(dist(2,3) / dist(22,24));
+            add('FWHR', 'FWHR', fwhr, male ? [[1.9,2.06],[1.85,2.11]] : [[1.85,2.11],[1.8,2.16]]);
+
+            // 4. Jaw Angle (New Logic: Slope of Jaw Body)
+            // Gonion -> ChinCorner
+            const jL = slope(7, 4); const jR = slope(8, 5); // Inverted logic
+            const jaw = round((Math.abs(jL) + Math.abs(jR)) / 2); // Approx slope
+            // User requested "Corrected" logic. Often approx 85-95 deg at chin vertex.
+            // Using Angle at Chin Corner might be better?
+            // Let's use simple Vector Angle 4->7->6 (Gon->Corn->Men)
+            const angL = angle(4, 7, 6);
+            const angR = angle(5, 8, 6);
+            const jAvg = round((angL + angR) / 2);
+            // This is usually around 140-160.
+            // Let's stick to standard "Jaw Frontal" which is often defined as Bigonial/Chin angle
+            // We'll use the user's PDF ranges (85-95). This implies the angle AT THE CHIN (6) from Gons (4,5)
+            const chinAng = round(angle(4, 6, 5));
+            add('JAW', 'Jaw Frontal', chinAng+'°', male ? [[84.5,95],[80.5,99]] : [[86,97],[82.5,100.5]]);
+
+            // 5. Bigonial
+            const big = round((dist(4,5) / dist(2,3)) * 100);
+            add('BIG', 'Jaw Width', big+'%', male ? [[85.5,92],[83.5,94]] : [[81.5,88.5],[79.5,90.5]]);
+
+            // 6. Chin Philtrum
+            const cp = round(dist(25,6) / dist(23,24));
+            add('CHIN', 'Chin-Philtrum', cp, male ? [[2.05,2.55],[1.87,2.73]] : [[2.0,2.5],[1.85,2.65]]);
+
+            // 7. Mouth-Nose
+            const mn = round(dist(15,16) / dist(13,14));
+            add('MN', 'Mouth-Nose', mn, male ? [[1.38,1.53],[1.34,1.57]] : [[1.45,1.67],[1.4,1.72]]);
+
+            // 8. Bitemporal (Temp/Zygo)
+            const bit = round((dist(26,27) / dist(2,3)) * 100);
+            add('TEMP', 'Bitemporal', bit+'%', male ? [[84,95],[82,97]] : [[79,92],[76,95]]);
+
+            // 9. Brow Tilt
+            const bt = round((slope(17,18) + slope(19,20))/2);
+            add('BROW', 'Brow Tilt', bt+'°', male ? [[5,13],[3,15]] : [[11,18.7],[9,20.7]]);
+
+            // 10. Thirds
+            const tot = dist(21,6); const mid = dist(22,23);
+            const th = round((mid/tot)*100);
+            add('THIRD', 'Midface %', th+'%', male ? [[29.5,36.5],[28,38]] : [[30,36],[29.5,37.5]]);
+
         } else {
-            const gon = angle(9,8,7);
-            add('GON', 'Gonial Angle', gon.toFixed(1)+'°', male ? [[112,123],[109.5,125.5]] : [[114,125],[111,128]]);
-            
-            const nas = angle(0,1,2);
-            add('NASO', 'Nasofrontal', nas.toFixed(1)+'°', male ? [[106,129],[101,134]] : [[122,143],[117,148]]);
-            
-            const conv = angle(0,3,6);
-            add('CONV', 'Convexity', conv.toFixed(1)+'°', male ? [[168,176],[163,179]] : [[166,175],[163,178]]);
-            
-            const ram = dist(9,8)/dist(8,7);
-            add('RAMUS', 'Ramus Ratio', ram.toFixed(2), male ? [[0.59,0.78],[0.54,0.83]] : [[0.52,0.7],[0.48,0.75]]);
-            
-            const proj = dist(1,2)/dist(1,7);
-            add('PROJ', 'Nasal Proj.', proj.toFixed(2), male ? [[0.55,0.68],[0.5,0.73]] : [[0.52,0.68],[0.47,0.73]]);
+            // Side
+            const gon = round(angle(9,8,7));
+            add('GON', 'Gonial Angle', gon+'°', male ? [[112,123],[109.5,125.5]] : [[114,125],[111,128]]);
+
+            const nas = round(angle(0,1,2));
+            add('NASO', 'Nasofrontal', nas+'°', male ? [[106,129],[101,134]] : [[122,143],[117,148]]);
+
+            const conv = round(angle(0,3,6));
+            add('CONV', 'Facial Convex.', conv+'°', male ? [[168,176],[163,179]] : [[166,175],[163,178]]);
+
+            const ram = round(dist(9,8) / dist(8,7));
+            add('RAM', 'Ramus Ratio', ram, male ? [[0.59,0.78],[0.54,0.83]] : [[0.52,0.7],[0.48,0.75]]);
+
+            const proj = round(dist(1,2) / dist(1,7));
+            add('PROJ', 'Nasal Proj.', proj, male ? [[0.55,0.68],[0.5,0.73]] : [[0.52,0.68],[0.47,0.73]]);
+
+            // Mandibular Plane (Jaw 7-8 vs Frankfort 9-10)
+            // Vectors
+            const vJ = {x:state.points[7].x-state.points[8].x, y:state.points[7].y-state.points[8].y};
+            const vF = {x:state.points[10].x-state.points[9].x, y:state.points[10].y-state.points[9].y};
+            const dot = vJ.x*vF.x + vJ.y*vF.y;
+            const mag = Math.hypot(vJ.x,vJ.y) * Math.hypot(vF.x,vF.y);
+            const man = round(Math.acos(dot/mag) * (180/Math.PI));
+            add('MAN', 'Mandibular Plane', man+'°', male ? [[15,22],[14,27]] : [[15,23],[14,27]]);
         }
-        
+
         toggleDrawer(true);
     }
 </script>
