@@ -1,4 +1,4 @@
-// HARMONY AI - Debug Version v1.2
+// HARMONY AI - Fixed & Cleaned v1.3
 const fileInput = document.getElementById('imageUpload');
 const canvas = document.getElementById('outputCanvas');
 const ctx = canvas.getContext('2d');
@@ -33,9 +33,10 @@ fileInput.addEventListener('change', (event) => {
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
     
-    loading.style.display = 'block';
-    scorecard.style.display = 'none';
-    metricsDiv.innerHTML = ""; // Clear previous
+    // Show loading state
+    if(loading) loading.style.display = 'block';
+    if(scorecard) scorecard.style.display = 'none';
+    if(metricsDiv) metricsDiv.innerHTML = ""; 
     
     // Run the AI
     await faceMesh.send({image: img});
@@ -48,20 +49,13 @@ function getDistance(p1, p2) {
 }
 
 function calculateAngle(A, B, C) {
-    // Calculates angle at point B (Vertex)
-    // Safety check for undefined points
     if(!A || !B || !C) return 0;
-    
     const AB = Math.sqrt(Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2));
     const BC = Math.sqrt(Math.pow(B.x - C.x, 2) + Math.pow(B.y - C.y, 2));
     const AC = Math.sqrt(Math.pow(C.x - A.x, 2) + Math.pow(C.y - A.y, 2));
-    
-    // Avoid division by zero
     if (BC * AB === 0) return 0;
-
-    // Cosine Rule
     let angleRad = Math.acos((BC*BC + AB*AB - AC*AC) / (2*BC*AB));
-    return angleRad * (180 / Math.PI); // Convert to degrees
+    return angleRad * (180 / Math.PI); 
 }
 
 function getTierClass(tier) {
@@ -74,10 +68,11 @@ function getTierClass(tier) {
 
 // 4. THE BRAIN: Process the measurements
 function onResults(results) {
-  loading.style.display = 'none';
-  scorecard.style.display = 'block';
+  // Hide loading, show results box
+  if(loading) loading.style.display = 'none';
+  if(scorecard) scorecard.style.display = 'block';
   
-  // Verify Landmarks exist
+  // Safety check: Did we find a face?
   if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
       metricsDiv.innerHTML = "<span style='color:red'>No face detected. Please try a clearer photo.</span>";
       return;
@@ -87,30 +82,35 @@ function onResults(results) {
 
   // Draw the mesh
   try {
-      // Check if global drawing variables exist
-      if (window.drawConnectors && window.FACEMESH_TESSELATION) {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height); // Redraw image so mesh sits on top
+      if (window.drawConnectors) {
           drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C040', lineWidth: 0.5});
       }
+      ctx.restore();
   } catch(e) {
-      console.log("Drawing failed, skipping visual mesh");
+      console.log("Visual mesh error (ignoring): " + e);
   }
 
+  // START CALCULATION (Wrapped in try/catch to prevent blank screen)
   try {
-    // --- DECISION: IS IT SIDE OR FRONT? ---
     const nose = landmarks[1];
     const leftCheek = landmarks[234];
     const rightCheek = landmarks[454];
     
+    // Calculate Face Width
     const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+    
     let html = "";
     
-    // SIDE PROFILE CHECK
+    // --- SIDE PROFILE LOGIC ---
+    // If face is very narrow (width < 0.2) or nose is outside the cheeks
     if (faceWidth < 0.2 || nose.x < leftCheek.x || nose.x > rightCheek.x) {
         
         let profileSide = "Right";
         let earIdx = 132, jawIdx = 172, chinIdx = 152; 
 
-        // Check look direction
         if (nose.x < 0.5) { 
             profileSide = "Left";
             earIdx = 361; jawIdx = 397; chinIdx = 152; 
@@ -145,14 +145,13 @@ function onResults(results) {
         html += `<p><strong>Ramus Ratio:</strong> ${ratio.toFixed(2)} <span class="${getTierClass(ratioTier)}">[${ratioTier}]</span></p>`;
 
     } else {
-        // FRONT PROFILE CHECK
+        // --- FRONT PROFILE LOGIC ---
         html += `<h4>Front Profile Detected</h4>`;
 
         // 1. Canthal Tilt
         const outerEye = landmarks[33];
         const innerEye = landmarks[133];
         let tilt = (Math.atan2(outerEye.y - innerEye.y, outerEye.x - innerEye.x) * 180 / Math.PI) * -1;
-        if (isNaN(tilt)) tilt = 0;
         
         let tiltTier = "Tier B";
         if (tilt >= 4 && tilt <= 10) tiltTier = "Tier S (Ideal)";
@@ -165,7 +164,6 @@ function onResults(results) {
         const innerDist = getDistance(landmarks[133], landmarks[362]);
         const cheekWidth = getDistance(landmarks[234], landmarks[454]);
         let esr = (innerDist / cheekWidth) * 100;
-        if (isNaN(esr)) esr = 0;
         
         let esrTier = "Tier B";
         if (esr >= 45 && esr <= 47) esrTier = "Tier S (Ideal)";
