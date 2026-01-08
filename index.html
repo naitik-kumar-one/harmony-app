@@ -3,279 +3,721 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HARMONY ANALYTICS v3.0 (Fixed Logic)</title>
+    <title>FACE ANALYTICS PRO | Biometric Suite</title>
     <style>
-        :root { --primary: #00ff9d; --bg: #111; --panel: #1a1a1a; --text: #eee; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 10px; }
-        
+        :root {
+            --bg: #050505;
+            --panel: #111;
+            --border: #333;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --accent: #00f3ff; /* Surgical Cyan */
+            --gold: #ffd700;   /* Tier 1 */
+            --green: #00ff9d;  /* Tier 2 */
+            --red: #ff4444;    /* Fail */
+            --font-mono: 'Courier New', Courier, monospace;
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
         /* HEADER */
-        h1 { color: var(--primary); text-transform: uppercase; margin: 10px 0; font-size: 1.2rem; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        header {
+            width: 100%;
+            padding: 20px;
+            background: rgba(5, 5, 5, 0.95);
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+        }
 
-        /* CONTROLS */
-        .controls { background: var(--panel); padding: 15px; border-radius: 8px; width: 100%; max-width: 600px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 15px; border: 1px solid #333; }
-        button, label { background: #333; color: white; padding: 10px 15px; border-radius: 5px; cursor: pointer; border: 1px solid #555; font-weight: bold; font-size: 0.9rem; }
-        button:hover, label:hover { border-color: var(--primary); color: var(--primary); }
-        input { display: none; }
+        h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-family: var(--font-mono);
+        }
+
+        /* LAYOUT */
+        main {
+            width: 100%;
+            max-width: 800px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* CONTROLS CARD */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        /* BUTTONS */
+        button, .file-btn {
+            background: #1a1a1a;
+            color: var(--text-main);
+            border: 1px solid #444;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover, .file-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        button.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        button.undo-btn { border-color: var(--red); color: var(--red); }
+        button.undo-btn:hover { background: var(--red); color: white; }
+
+        input[type="file"] { display: none; }
+
+        /* INSTRUCTION BAR */
+        .guide-bar {
+            background: rgba(0, 243, 255, 0.05);
+            border-left: 4px solid var(--accent);
+            padding: 12px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #step-text { font-weight: bold; color: var(--accent); }
+        #step-count { font-family: var(--font-mono); font-size: 0.8em; opacity: 0.7; }
+
+        /* CANVAS AREA */
+        .workspace {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            touch-action: none; /* Prevents scroll on mobile */
+            cursor: crosshair;
+            display: none; /* Hidden until upload */
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* SNIPER LENS */
+        #lens {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+            background-color: #000;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            background-repeat: no-repeat;
+        }
+        /* Crosshair in lens */
+        #lens::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 6px; height: 6px;
+            background: var(--red);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(0,0,0,0.8);
+        }
+
+        /* RESULTS AREA */
+        #results-area { display: none; margin-top: 20px; animation: fadeIn 0.5s ease; }
         
-        /* GUIDE BOX */
-        #guide { background: #2a2a00; color: #ffd700; padding: 15px; border-radius: 5px; margin-bottom: 15px; font-weight: bold; width: 100%; max-width: 600px; text-align: center; border: 1px solid #ffd700; }
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
         
-        /* CANVAS */
-        .canvas-wrap { position: relative; border: 2px solid #333; max-width: 100%; overflow: hidden; display: none; }
-        canvas { display: block; max-width: 100%; }
+        .score-card {
+            background: #161616;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .score-card:hover { transform: translateY(-2px); border-color: #444; }
 
-        /* MAGNIFIER */
-        #lens { position: absolute; width: 140px; height: 140px; border: 2px solid var(--primary); border-radius: 50%; pointer-events: none; display: none; background: #000; box-shadow: 0 0 15px rgba(0,255,157,0.5); z-index: 100; }
-        #lens::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: red; transform: translate(-50%, -50%); border-radius: 50%; }
+        .metric-info h4 { margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .metric-value { font-size: 1.4rem; font-weight: 700; color: #fff; font-family: var(--font-mono); }
+        
+        .tier-badge {
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .t-1 { background: var(--gold); color: #000; box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); }
+        .t-2 { background: var(--green); color: #000; }
+        .t-3 { background: #555; color: #fff; }
+        .t-fail { background: var(--red); color: #fff; }
 
-        /* RESULTS */
-        #report { width: 100%; max-width: 600px; display: none; margin-top: 20px; padding-bottom: 50px; }
-        .card { background: var(--panel); border: 1px solid #333; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .val { font-size: 1.3rem; font-weight: bold; color: white; }
-        .tag { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; color: black; }
-        .s-tier { background: #ffd700; box-shadow: 0 0 8px #ffd700; }
-        .a-tier { background: var(--primary); }
-        .b-tier { background: #aaa; }
-        .f-tier { background: #ff5555; color: white; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            border: 2px dashed #333;
+            border-radius: 12px;
+            color: #555;
+            margin-top: 20px;
+        }
+
     </style>
 </head>
 <body>
 
-    <h1>Harmony Analytics v3.0</h1>
+<header>
+    <h1>Face Analytics Pro</h1>
+</header>
 
-    <div class="controls">
-        <label>📂 Upload Photo <input type="file" id="fileIn" accept="image/*"></label>
-        <button onclick="setMode('front')" id="btnFront">Front</button>
-        <button onclick="setMode('side')" id="btnSide">Side</button>
-        <button onclick="undo()" style="color:#ff5555; border-color:#ff5555;">Undo</button>
+<main>
+    <div class="panel">
+        <div class="control-group">
+            <label class="file-btn">
+                📂 Upload Image
+                <input type="file" id="fileIn" accept="image/*">
+            </label>
+            <div style="width:1px; background:#333; margin:0 10px;"></div>
+            <button id="btn-male" class="active" onclick="setGender('male')">Male</button>
+            <button id="btn-female" onclick="setGender('female')">Female</button>
+        </div>
+
+        <div class="control-group">
+            <button id="mode-front" class="active" onclick="setMode('front')">Front Profile</button>
+            <button id="mode-side" onclick="setMode('side')">Side Profile</button>
+        </div>
+
+        <div class="guide-bar">
+            <span id="step-text">Waiting for image...</span>
+            <span id="step-count"></span>
+        </div>
     </div>
 
-    <div id="guide">Upload a photo to begin</div>
-
-    <div class="canvas-wrap" id="wrap">
+    <div id="workspace" class="workspace">
         <canvas id="cvs"></canvas>
         <div id="lens"></div>
+        
+        <button onclick="undo()" style="position:absolute; bottom:15px; right:15px; z-index:20; background:rgba(0,0,0,0.8); border-color:#ff4444; color:#ff4444; font-size:0.8rem; padding:8px 12px;">
+            ↩ Undo
+        </button>
     </div>
 
-    <div id="report"></div>
+    <div id="empty-msg" class="empty-state">
+        Upload a high-quality photo to begin analysis.<br>
+        <small>Supported formats: JPG, PNG</small>
+    </div>
+
+    <div id="results-area">
+        <div class="score-header">
+            <h2 style="margin:0; font-size:1.2rem; color:#fff;">// BIOMETRIC REPORT</h2>
+            <div id="total-score" style="color:var(--accent); font-family:var(--font-mono); font-weight:bold;"></div>
+        </div>
+        <div id="metrics-container"></div>
+    </div>
+</main>
 
 <script>
-    // --- CONFIG ---
+    /* --- CONFIG & STATE --- */
     const cvs = document.getElementById('cvs');
     const ctx = cvs.getContext('2d');
-    const wrap = document.getElementById('wrap');
     const lens = document.getElementById('lens');
-    const guide = document.getElementById('guide');
+    const workspace = document.getElementById('workspace');
+    
     let img = new Image();
-    let pts = [];
+    let pts = []; // Captured points
     let mode = 'front';
-    let scale = 1;
+    let gender = 'male';
+    let scale = 1; // Canvas scale relative to intrinsic image size
 
-    // --- LANDMARK MAP (Order Matters) ---
-    // Note: "Image Left" = The left side of the photo (usually subject's right)
-    const MAP = {
+    // --- LANDMARK DEFINITIONS ---
+    // Defined strictly based on the order needed for calculations
+    const STEPS = {
         front: [
-            { id: 'pupil_L', txt: "Left Pupil (Image Left)" },
-            { id: 'inner_L', txt: "Left Eye Inner Corner" },
-            { id: 'outer_L', txt: "Left Eye Outer Corner" },
-            { id: 'pupil_R', txt: "Right Pupil (Image Right)" },
-            { id: 'inner_R', txt: "Right Eye Inner Corner" },
-            { id: 'outer_R', txt: "Right Eye Outer Corner" },
-            { id: 'zygo_L', txt: "Left Cheekbone (Widest Point)" },
-            { id: 'zygo_R', txt: "Right Cheekbone (Widest Point)" },
-            { id: 'lip_mid', txt: "Center of Lips" },
-            { id: 'chin', txt: "Bottom of Chin" }
+            { id: 'pupil_l', txt: "Left Pupil (Center of Eye)" },
+            { id: 'pupil_r', txt: "Right Pupil (Center of Eye)" },
+            { id: 'zygo_l', txt: "Left Cheekbone (Widest Point)" },
+            { id: 'zygo_r', txt: "Right Cheekbone (Widest Point)" },
+            { id: 'in_canth_l', txt: "Left Inner Eye Corner" },
+            { id: 'out_canth_l', txt: "Left Outer Eye Corner" },
+            { id: 'in_canth_r', txt: "Right Inner Eye Corner" },
+            { id: 'out_canth_r', txt: "Right Outer Eye Corner" },
+            { id: 'hairline', txt: "Hairline Center (Top of Forehead)" },
+            { id: 'glabella', txt: "Glabella (Between Brows)" },
+            { id: 'subnasale', txt: "Base of Nose (Subnasale)" },
+            { id: 'menton', txt: "Bottom of Chin (Menton)" },
+            { id: 'lip_top', txt: "Top of Upper Lip" },
+            { id: 'lip_bot', txt: "Bottom of Lower Lip" },
+            { id: 'jaw_l', txt: "Left Jaw Angle (Gonion)" },
+            { id: 'jaw_r', txt: "Right Jaw Angle (Gonion)" },
+            { id: 'neck_l', txt: "Left Neck Width" },
+            { id: 'neck_r', txt: "Right Neck Width" }
         ],
         side: [
-            { id: 'gla', txt: "Brow Ridge (Glabella)" },
-            { id: 'nas', txt: "Nose Bridge Dip (Nasion)" },
-            { id: 'tip', txt: "Nose Tip" },
-            { id: 'pog', txt: "Chin Tip (Most Forward)" },
-            { id: 'men', txt: "Chin Bottom" },
-            { id: 'gon', txt: "Jaw Corner (Gonion)" },
-            { id: 'tra', txt: "Ear Hole (Tragus)" }
+            { id: 'glabella', txt: "Glabella (Brow Ridge)" },
+            { id: 'nasion', txt: "Nasion (Nose Bridge Dip)" },
+            { id: 'tip', txt: "Nose Tip (Pronasale)" },
+            { id: 'subnasale', txt: "Nose Base (Subnasale)" },
+            { id: 'lip_u', txt: "Upper Lip (Most Forward)" },
+            { id: 'lip_l', txt: "Lower Lip (Most Forward)" },
+            { id: 'pogonion', txt: "Chin Tip (Most Forward)" },
+            { id: 'menton', txt: "Chin Bottom (Menton)" },
+            { id: 'gonion', txt: "Jaw Angle (Gonion)" },
+            { id: 'tragion', txt: "Ear Hole (Tragus)" },
+            { id: 'eye_bot', txt: "Bottom of Eye Socket (Orbitale)" } // Needed for Frankfort Plane
         ]
     };
 
-    // --- CORE FUNCTIONS ---
-    document.getElementById('fileIn').onchange = e => {
+    /* --- INITIALIZATION --- */
+    document.getElementById('fileIn').addEventListener('change', e => {
         if(!e.target.files[0]) return;
-        img.src = URL.createObjectURL(e.target.files[0]);
-        img.onload = () => { pts=[]; draw(); wrap.style.display='block'; updateGuide(); };
-    };
+        const url = URL.createObjectURL(e.target.files[0]);
+        img.src = url;
+        img.onload = () => {
+            pts = [];
+            document.getElementById('empty-msg').style.display = 'none';
+            workspace.style.display = 'block';
+            document.getElementById('results-area').style.display = 'none';
+            resize();
+            updateGuide();
+            draw();
+        };
+    });
 
-    function setMode(m) { mode=m; pts=[]; draw(); updateGuide(); document.getElementById('report').innerHTML=''; }
-    function undo() { pts.pop(); draw(); updateGuide(); }
+    function setMode(m) {
+        mode = m;
+        pts = [];
+        document.getElementById('mode-front').className = m === 'front' ? 'active' : '';
+        document.getElementById('mode-side').className = m === 'side' ? 'active' : '';
+        document.getElementById('results-area').style.display = 'none';
+        updateGuide();
+        draw();
+    }
 
-    function updateGuide() {
-        const m = MAP[mode];
-        if(pts.length < m.length) {
-            guide.innerText = `Step ${pts.length+1}/${m.length}: Click ${m[pts.length].txt}`;
-            guide.style.background = "#2a2a00";
-        } else {
-            guide.innerText = "✓ Analysis Complete - See Report Below";
-            guide.style.background = "#003300";
-            calc();
+    function setGender(g) {
+        gender = g;
+        document.getElementById('btn-male').className = g === 'male' ? 'active' : '';
+        document.getElementById('btn-female').className = g === 'female' ? 'active' : '';
+        if(pts.length === STEPS[mode].length) calculate(); // Recalc if done
+    }
+
+    function undo() {
+        if(pts.length > 0) {
+            pts.pop();
+            updateGuide();
+            draw();
+            document.getElementById('results-area').style.display = 'none';
         }
     }
 
-    // --- CANVAS DRAWING ---
-    function draw() {
-        // Resize logic
-        const maxW = Math.min(window.innerWidth - 20, 800);
+    function resize() {
+        if(!img.src) return;
+        const containerW = Math.min(window.innerWidth - 30, 800);
         const ratio = img.width / img.height;
-        cvs.width = maxW;
-        cvs.height = maxW / ratio;
+        cvs.width = containerW;
+        cvs.height = containerW / ratio;
         scale = cvs.width / img.width;
+    }
 
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    /* --- INTERACTION (TOUCH & MOUSE) --- */
+    const handleMove = (x, y) => {
+        if(pts.length >= STEPS[mode].length) { lens.style.display='none'; return; }
+        
+        lens.style.display = 'block';
+        lens.style.left = (x - 70) + 'px';
+        lens.style.top = (y - 100) + 'px'; // Offset slightly above finger
+
+        // Zoom Logic (3x)
+        const zoom = 3;
+        const bgW = cvs.width * zoom;
+        const bgH = cvs.height * zoom;
+        const bgX = -(x * zoom - 70);
+        const bgY = -(y * zoom - 70);
+
+        lens.style.backgroundImage = `url(${cvs.toDataURL()})`;
+        lens.style.backgroundSize = `${bgW}px ${bgH}px`;
+        lens.style.backgroundPosition = `${bgX}px ${bgY}px`;
+    };
+
+    const handleClick = (x, y) => {
+        if(pts.length >= STEPS[mode].length) return;
+        pts.push({x, y});
+        draw();
+        updateGuide();
+        if(pts.length === STEPS[mode].length) {
+            lens.style.display = 'none';
+            calculate();
+        }
+    };
+
+    // Mouse Events
+    cvs.addEventListener('mousemove', e => {
+        const r = cvs.getBoundingClientRect();
+        handleMove(e.clientX - r.left, e.clientY - r.top);
+    });
+    cvs.addEventListener('mousedown', e => {
+        const r = cvs.getBoundingClientRect();
+        handleClick(e.clientX - r.left, e.clientY - r.top);
+    });
+    cvs.addEventListener('mouseleave', () => lens.style.display = 'none');
+
+    // Touch Events
+    cvs.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const r = cvs.getBoundingClientRect();
+        const t = e.touches[0];
+        handleMove(t.clientX - r.left, t.clientY - r.top);
+    }, {passive: false});
+    
+    cvs.addEventListener('touchstart', e => {
+        e.preventDefault(); // Stop scroll
+        const r = cvs.getBoundingClientRect();
+        const t = e.touches[0];
+        handleMove(t.clientX - r.left, t.clientY - r.top);
+    }, {passive: false});
+
+    cvs.addEventListener('touchend', e => {
+        // Use the last known position from the move (lens position) to register click
+        // Simple approximation: Center of lens
+        const lLeft = parseFloat(lens.style.left) || 0;
+        const lTop = parseFloat(lens.style.top) || 0;
+        // Revert offset
+        handleClick(lLeft + 70, lTop + 100);
+        lens.style.display = 'none';
+    });
+
+    /* --- RENDERING --- */
+    function updateGuide() {
+        const steps = STEPS[mode];
+        const stepSpan = document.getElementById('step-text');
+        const countSpan = document.getElementById('step-count');
+        
+        if(pts.length < steps.length) {
+            stepSpan.innerHTML = `CLICK: <span style="color:#fff">${steps[pts.length].txt}</span>`;
+            countSpan.innerText = `${pts.length + 1} / ${steps.length}`;
+            document.querySelector('.guide-bar').style.borderColor = 'var(--accent)';
+        } else {
+            stepSpan.innerText = "✓ Analysis Complete";
+            countSpan.innerText = "";
+            document.querySelector('.guide-bar').style.borderColor = 'var(--gold)';
+        }
+    }
+
+    function draw() {
         ctx.clearRect(0,0,cvs.width,cvs.height);
         if(img.src) ctx.drawImage(img,0,0,cvs.width,cvs.height);
 
-        // Draw points
-        pts.forEach((p,i) => {
-            ctx.fillStyle = '#00ff9d'; ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.font="12px sans-serif"; ctx.fillText(i+1, p.x+8, p.y);
+        // Draw Lines if complete
+        if(pts.length === STEPS[mode].length) {
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = "rgba(0, 243, 255, 0.5)";
+            ctx.beginPath();
+            
+            if(mode === 'front') {
+                // Connect Eyes
+                ctx.moveTo(pts[4].x, pts[4].y); ctx.lineTo(pts[5].x, pts[5].y); // L Eye
+                ctx.moveTo(pts[6].x, pts[6].y); ctx.lineTo(pts[7].x, pts[7].y); // R Eye
+                // Face Box
+                ctx.moveTo(pts[2].x, pts[2].y); ctx.lineTo(pts[3].x, pts[3].y); // Zygos
+                // Jaw
+                ctx.moveTo(pts[14].x, pts[14].y); ctx.lineTo(pts[11].x, pts[11].y); 
+                ctx.lineTo(pts[15].x, pts[15].y);
+            } else {
+                // Side Profile: Jaw
+                ctx.moveTo(pts[9].x, pts[9].y); ctx.lineTo(pts[8].x, pts[8].y); ctx.lineTo(pts[7].x, pts[7].y);
+                // Profile
+                ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[2].x, pts[2].y); ctx.lineTo(pts[6].x, pts[6].y);
+            }
+            ctx.stroke();
+        }
+
+        // Draw Points
+        pts.forEach((p, i) => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2, 0, Math.PI*2); // 2px radius
+            ctx.fillStyle = "var(--accent)";
+            ctx.fill();
+            // Optional ring
+            ctx.strokeStyle = "rgba(0,0,0,0.5)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
         });
     }
 
-    // --- INPUT HANDLING ---
-    cvs.addEventListener('mousemove', e => {
-        if(pts.length >= MAP[mode].length) { lens.style.display='none'; return; }
-        const r = cvs.getBoundingClientRect();
-        const x = e.clientX - r.left;
-        const y = e.clientY - r.top;
-        
-        lens.style.display = 'block';
-        lens.style.left = (x-70)+'px'; lens.style.top = (y-70)+'px';
-        
-        // 2.5x Zoom
-        const z = 2.5;
-        lens.style.backgroundImage = `url(${cvs.toDataURL()})`;
-        lens.style.backgroundSize = `${cvs.width*z}px ${cvs.height*z}px`;
-        lens.style.backgroundPosition = `-${x*z - 70}px -${y*z - 70}px`;
-    });
-
-    cvs.addEventListener('mousedown', e => {
-        if(pts.length >= MAP[mode].length) return;
-        const r = cvs.getBoundingClientRect();
-        pts.push({ x: e.clientX - r.left, y: e.clientY - r.top });
-        draw(); updateGuide();
-    });
-
-    // --- MATH & LOGIC ---
+    /* --- MATH ENGINE & SCORING --- */
     function dist(i1, i2) {
-        const p1 = pts[i1], p2 = pts[i2];
-        return Math.sqrt(Math.pow(p1.x-p2.x, 2) + Math.pow(p1.y-p2.y, 2));
+        return Math.sqrt(Math.pow(pts[i1].x - pts[i2].x, 2) + Math.pow(pts[i1].y - pts[i2].y, 2));
     }
 
-    function calc() {
-        const rep = document.getElementById('report');
-        rep.style.display = 'block';
-        let html = '';
+    function angle(A_idx, B_idx, C_idx) {
+        // Angle at B
+        const A = pts[A_idx], B = pts[B_idx], C = pts[C_idx];
+        const AB = Math.sqrt(Math.pow(B.x-A.x, 2) + Math.pow(B.y-A.y, 2));
+        const BC = Math.sqrt(Math.pow(B.x-C.x, 2) + Math.pow(B.y-C.y, 2));
+        const AC = Math.sqrt(Math.pow(C.x-A.x, 2) + Math.pow(C.y-A.y, 2));
+        return Math.acos((AB*AB + BC*BC - AC*AC) / (2*AB*BC)) * (180/Math.PI);
+    }
+
+    function tilt(in_idx, out_idx) {
+        // Returns angle relative to horizon. 
+        // Inverted Y logic: Higher Y value = Lower on screen.
+        // We want Positive if Outer is Higher (Smaller Y) than Inner.
+        const pIn = pts[in_idx], pOut = pts[out_idx];
+        const dy = pIn.y - pOut.y; // Positive if Outer is higher
+        const dx = pOut.x - pIn.x; // Assume outer is to the right
+        return Math.atan2(dy, Math.abs(dx)) * (180/Math.PI);
+    }
+
+    function getTier(val, ranges, scores) {
+        // ranges = [[min, max], [min, max]...] corresponding to T1, T2, T3...
+        // scores = [score1, score2...]
+        for(let i=0; i<ranges.length; i++) {
+            if(val >= ranges[i][0] && val <= ranges[i][1]) {
+                return { tier: `Tier ${i+1}`, score: scores[i], cls: i===0?'t-1':(i===1?'t-2':'t-3') };
+            }
+        }
+        // Fail
+        return { tier: 'Fail', score: scores[scores.length-1], cls: 't-fail' };
+    }
+
+    function calculate() {
+        let html = "";
+        let totalScore = 0;
+        let maxScore = 0;
+
+        // Helper to add card
+        const addMetric = (name, valStr, tierData) => {
+            totalScore += tierData.score;
+            maxScore += (tierData.score > 0 ? tierData.score : 0); // Simplified max logic
+            // Hack for max score calculation: Use the T1 score from the list
+            // Just display total points at end
+            
+            html += `
+            <div class="score-card">
+                <div class="metric-info">
+                    <h4>${name}</h4>
+                    <div class="metric-value">${valStr}</div>
+                </div>
+                <div class="tier-badge ${tierData.cls}">${tierData.tier} (${tierData.score}pts)</div>
+            </div>`;
+        };
 
         if(mode === 'front') {
-            // 1. CANTHAL TILT (Corrected)
-            // We use Inner(1) and Outer(2) for Left Eye
-            // Note: In canvas, Y increases downwards. 
-            // Positive Tilt = Outer Y is SMALLER (Higher) than Inner Y.
-            const pL_in = pts[1], pL_out = pts[2];
-            const pR_in = pts[4], pR_out = pts[5];
-
-            // Formula: Angle relative to horizontal
-            // We negate the result because canvas Y is inverted
-            const tiltL = -Math.atan2(pL_out.y - pL_in.y, pL_out.x - pL_in.x) * (180/Math.PI);
-            const tiltR = -Math.atan2(pR_out.y - pR_in.y, pR_out.x - pR_in.x) * (180/Math.PI);
-            // Since right eye goes Right-to-Left on x-axis if we map straight, let's just use absolute height diff logic to be safe
-            // Safer logic: just measure rise/run magnitude
-            
-            // Re-calc using simple rise/run to avoid direction confusion
-            // Left Eye: Outer should be higher (smaller y)
-            const riseL = pL_in.y - pL_out.y; 
-            const runL = Math.abs(pL_out.x - pL_in.x);
-            const angL = Math.atan2(riseL, runL) * (180/Math.PI);
-
-            // Right Eye: Outer should be higher (smaller y)
-            const riseR = pR_in.y - pR_out.y; 
-            const runR = Math.abs(pR_out.x - pR_in.x);
-            const angR = Math.atan2(riseR, runR) * (180/Math.PI);
-
-            const avgTilt = (angL + angR) / 2;
-            
-            let tClass = "b-tier", tTxt = "Neutral";
-            if(avgTilt > 4) { tClass = "s-tier"; tTxt = "Hunter (+)"; }
-            else if(avgTilt < 0) { tClass = "f-tier"; tTxt = "Negative"; }
-
-            html += card("Canthal Tilt", avgTilt.toFixed(1)+"°", tClass, tTxt, "Ideal is 5° - 8°");
-
-            // 2. EYE SPACING (ESR) - Fixed
-            // Formula: Inter-Pupillary Dist / Bizygomatic Width
-            const ipd = dist(0, 3); // Pupil L to Pupil R
-            const faceW = dist(6, 7); // Zygo L to Zygo R
+            // 1. ESR (Pupil Dist / Zygo Width)
+            const ipd = dist(0, 1);
+            const faceW = dist(2, 3);
             const esr = (ipd / faceW) * 100;
-
-            let eClass = "b-tier", eTxt = "Avg";
-            if(esr >= 45 && esr <= 48) { eClass="s-tier"; eTxt="Ideal"; }
-            else if(esr >= 41 && esr <= 50) { eClass="a-tier"; eTxt="Good"; }
-
-            html += card("Eye Spacing (ESR)", esr.toFixed(1)+"%", eClass, eTxt, "Based on Pupil Distance (Ideal ~46%)");
-
-            // 3. MIDFACE COMPACTNESS
-            // Pupil Y (Avg) to Lip Center Y / Face Width
-            const avgPupilY = (pts[0].y + pts[3].y) / 2;
-            const lipY = pts[8].y;
-            const midHeight = lipY - avgPupilY;
-            const ratio = midHeight / faceW;
-
-            let cClass = "a-tier", cTxt = "Normal";
-            if(ratio < 0.4) { cClass="s-tier"; cTxt="Compact"; }
-            if(ratio > 0.5) { cClass="b-tier"; cTxt="Long"; }
-
-            html += card("Midface Ratio", ratio.toFixed(2), cClass, cTxt, "Pupil-to-Lip / Face Width (Lower is better)");
-
-            // DRAW DEBUG LINES
-            ctx.strokeStyle = "yellow"; ctx.lineWidth=2;
-            ctx.beginPath(); ctx.moveTo(pL_in.x, pL_in.y); ctx.lineTo(pL_out.x, pL_out.y); ctx.stroke(); // Eye lines
-            ctx.beginPath(); ctx.moveTo(pR_in.x, pR_in.y); ctx.lineTo(pR_out.x, pR_out.y); ctx.stroke();
-            ctx.strokeStyle = "blue";
-            ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[3].x, pts[3].y); ctx.stroke(); // IPD
-            ctx.strokeStyle = "red";
-            ctx.beginPath(); ctx.moveTo(pts[6].x, pts[6].y); ctx.lineTo(pts[7].x, pts[7].y); ctx.stroke(); // Width
-        } 
-        else {
-            // SIDE PROFILE
-            // Gonial Angle: Tragus(6) -> Gonion(5) -> Menton(4)
-            const pTra = pts[6], pGon = pts[5], pMen = pts[4];
             
-            // Cosine rule
-            const a = Math.sqrt(Math.pow(pTra.x-pGon.x,2) + Math.pow(pTra.y-pGon.y,2));
-            const b = Math.sqrt(Math.pow(pGon.x-pMen.x,2) + Math.pow(pGon.y-pMen.y,2));
-            const c = Math.sqrt(Math.pow(pTra.x-pMen.x,2) + Math.pow(pTra.y-pMen.y,2));
-            const ang = Math.acos((a*a + b*b - c*c)/(2*a*b)) * (180/Math.PI);
+            const r_esr = gender === 'male' 
+                ? [[44.3,47.7], [43.6,48.4], [43.1,48.9], [42.6,49.4], [42,50], [35,58]] 
+                : [[45,47.9], [44.3,48.6], [43.8,49.1], [43.3,49.6], [42.7,50.2], [42,51]];
+            const s_esr = [35, 17.5, 8.75, 4.38, 0, -4.38, -17.5];
+            addMetric("Eye Separation Ratio", esr.toFixed(1) + "%", getTier(esr, r_esr, s_esr));
 
-            let gClass = "b-tier";
-            if(ang >= 115 && ang <= 125) gClass="s-tier";
+            // 2. Facial Thirds
+            const hUpper = Math.abs(pts[8].y - pts[9].y);
+            const hMid = Math.abs(pts[9].y - pts[10].y);
+            const hLower = Math.abs(pts[10].y - pts[11].y);
+            const hTotal = hUpper + hMid + hLower;
+            const pUpper = (hUpper/hTotal)*100, pMid = (hMid/hTotal)*100, pLower = (hLower/hTotal)*100;
             
-            html += card("Gonial Angle", ang.toFixed(1)+"°", gClass, (ang>125?"Obtuse":"Ideal"), "Ideal: 118-123°");
+            // Check Mid & Lower for tiering
+            const r_3rds = gender === 'male' 
+                ? [[29.5,36.5], [28,38], [26.5,39.5], [25,41], [23.5,42.5], [22.5,43.5]]
+                : [[30,36], [29.5,37.5], [28,38], [27,39], [25,41], [24,42]];
+            // We use Midface for scoring proxy as per request simplicity, or average mid/lower check
+            // Strict interpretation: Midface falls in range
+            const s_3rds = [30, 15, 7.5, 3.75, 0, -7.5, -15];
+            addMetric("Facial Thirds Balance", `U:${pUpper.toFixed(0)}% M:${pMid.toFixed(0)}% L:${pLower.toFixed(0)}%`, getTier(pMid, r_3rds, s_3rds));
+
+            // 3. Canthal Tilt (Avg of L and R)
+            const tL = tilt(4, 5); // Left Eye
+            const tR = tilt(6, 7); // Right Eye
+            const avgTilt = (tL + tR) / 2;
             
-            // Draw Lines
-            ctx.strokeStyle = "lime"; ctx.lineWidth=3;
-            ctx.beginPath(); ctx.moveTo(pTra.x, pTra.y); ctx.lineTo(pGon.x, pGon.y); ctx.lineTo(pMen.x, pMen.y); ctx.stroke();
+            const r_tilt = gender === 'male'
+                ? [[5.2,8.5], [4,9.7], [3,10.7], [0,13.7], [-2,15.7], [-4,17.9]]
+                : [[6,9.6], [4.8,10.8], [3.6,12], [1.5,14.1], [-3,18.2], [0,15.6]];
+            const s_tilt = [25, 12.5, 6.25, 3.13, 0, -6.25, -12.5];
+            addMetric("Canthal Tilt", avgTilt.toFixed(1) + "°", getTier(avgTilt, r_tilt, s_tilt));
+
+            // 4. FWHR (Zygo Width / Midface Height)
+            // Midface Height: Brow (9) to Upper Lip (12) per prompt "Brow to Upper Lip"
+            // Note: Standard is Nasion to Prosthesion, but prompt said "Brow to Upper Lip"
+            const midH = Math.abs(pts[9].y - pts[12].y);
+            const fwhr = faceW / midH;
+            
+            const r_fwhr = gender === 'male'
+                ? [[1.9,2.06], [1.85,2.11], [1.8,2.16], [1.75,2.21], [1.7,2.26], [1.66,2.3]]
+                : [[1.85,2.11], [1.8,2.16], [1.75,2.21], [1.7,2.26], [1.66,2.3], [1.3,2.8]];
+            const s_fwhr = [25, 12.5, 6.25, 3.13, 0, -6.25, -12.5];
+            addMetric("FWHR", fwhr.toFixed(2), getTier(fwhr, r_fwhr, s_fwhr));
+
+            // 5. Jaw Frontal Angle (Chin Slopes)
+            // Approx: Angle at Menton (11) between JawL(14) and JawR(15) is gonial-ish.
+            // Prompt says "Angle of jaw slopes at chin". 
+            // We calculate angle 14 -> 11 -> 15
+            const jfa = angle(14, 11, 15);
+            
+            const r_jfa = gender === 'male'
+                ? [[84.5,95], [80.5,99], [76.5,103], [72.5,107], [69.5,110], [66.5,113]]
+                : [[86,97], [82.5,100.5], [79,104], [75.5,107.5], [72,111], [69,114]];
+            const s_jfa = [25, 12.5, 6.25, 3.13, -6.25, 0, -12.5]; // Note T5 is negative in prompt
+            addMetric("Jaw Frontal Angle", jfa.toFixed(1) + "°", getTier(jfa, r_jfa, s_jfa));
+
+            // 6. Chin to Philtrum
+            const chinH = dist(13, 11); // Bot Lip to Menton
+            const philH = dist(10, 12); // Nose Base to Top Lip
+            const cpr = chinH / philH;
+            
+            const r_cpr = gender === 'male'
+                ? [[2.05,2.55], [1.87,2.73], [1.75,2.85], [1.55,3.2], [1.2,3.55], [1.0,3.85]]
+                : [[2.0,2.5], [1.85,2.65], [1.7,2.8], [1.5,3.15], [1.2,3.5], [1.0,3.8]];
+            const s_cpr = [12.5, 6.25, 3.13, 1.56, 0, -3.13, -8.2];
+            addMetric("Chin-to-Philtrum", cpr.toFixed(2), getTier(cpr, r_cpr, s_cpr));
+
+        } else {
+            // --- SIDE PROFILE ---
+            
+            // 1. Gonial Angle (Tragus 9 -> Gonion 8 -> Menton 7)
+            const ga = angle(9, 8, 7);
+            const r_ga = gender === 'male'
+                ? [[112,123], [109.5,125.5], [106,129], [102,133], [92,143], [80,160]]
+                : [[114,125], [111,128], [108,131], [97,138], [94,146], [80,160]];
+            const s_ga = [40, 20, 10, 5, 0, -10, -20];
+            addMetric("Gonial Angle", ga.toFixed(1)+"°", getTier(ga, r_ga, s_ga));
+
+            // 2. Nasofrontal Angle (Glabella 0 -> Nasion 1 -> Tip 2)
+            const nfa = angle(0, 1, 2);
+            const r_nfa = gender === 'male'
+                ? [[106,129], [101,134], [97,138], [94,141], [88,147], [70,170]]
+                : [[122,143], [117,148], [113,152], [110,155], [107,158], [70,170]];
+            const s_nfa = [15, 7.5, 3.75, 1.88, 0, -5];
+            addMetric("Nasofrontal Angle", nfa.toFixed(1)+"°", getTier(nfa, r_nfa, s_nfa));
+
+            // 3. Mandibular Plane (Jawline 8-7 vs Frankfort 9-10)
+            // We need angle between two lines.
+            // Vector Jaw: (M.x - G.x, M.y - G.y)
+            // Vector Frank: (Orb.x - Trag.x, Orb.y - Trag.y)
+            const vJaw = {x: pts[7].x - pts[8].x, y: pts[7].y - pts[8].y};
+            const vFrank = {x: pts[10].x - pts[9].x, y: pts[10].y - pts[9].y};
+            // Dot product / mags
+            const dot = vJaw.x*vFrank.x + vJaw.y*vFrank.y;
+            const magJ = Math.sqrt(vJaw.x*vJaw.x + vJaw.y*vJaw.y);
+            const magF = Math.sqrt(vFrank.x*vFrank.x + vFrank.y*vFrank.y);
+            const mpa = Math.acos(dot / (magJ * magF)) * (180/Math.PI);
+            
+            const r_mpa = gender === 'male'
+                ? [[15,22], [14,27], [12.5,30], [10,32.5], [0,45]]
+                : [[15,23], [14,27], [12.5,30], [8,35], [0,45]];
+            const s_mpa = [12.5, 6.25, 3.13, 1.56, -5, -10];
+            addMetric("Mandibular Plane", mpa.toFixed(1)+"°", getTier(mpa, r_mpa, s_mpa));
+
+            // 4. Ramus/Mandible (Tragus 9 -> Gonion 8) / (Gonion 8 -> Menton 7)
+            const ramus = dist(9, 8);
+            const mand = dist(8, 7);
+            const rmr = ramus / mand;
+            
+            const r_rmr = gender === 'male'
+                ? [[0.59,0.78], [0.54,0.83], [0.49,0.88], [0.41,0.96], [0.33,1.04], [0.1,1.5]]
+                : [[0.52,0.70], [0.48,0.75], [0.42,0.80], [0.34,0.88], [0.26,0.96], [0.1,1.5]];
+            const s_rmr = [10, 5, 2.5, 1.25, -5, -10];
+            addMetric("Ramus/Mandible", rmr.toFixed(2), getTier(rmr, r_rmr, s_rmr));
+
+            // 5. Facial Convexity (Glabella 0 -> Subnasale 3 -> Pogonion 6)
+            // Angle at Subnasale
+            const fca = angle(0, 3, 6);
+            const r_fca = gender === 'male'
+                ? [[168,176], [163,179], [161,181], [160,183], [155,184], [140,195]]
+                : [[166,175], [163,178], [161,180], [155,184], [159,182], [140,195]];
+            const s_fca = [10, 5, 2.5, 0, -2.5, -5];
+            addMetric("Facial Convexity", fca.toFixed(1)+"°", getTier(fca, r_fca, s_fca));
+
+            // 6. Nasal Projection (Nasion 1 -> Tip 2) / (Nasion 1 -> Menton 7)
+            const nLen = dist(1, 2);
+            const fHeight = dist(1, 7);
+            const npr = nLen / fHeight;
+            const r_npr = gender === 'male'
+                ? [[0.55,0.68], [0.50,0.73], [0.45,0.78], [0.37,0.86], [0.30,0.95], [0.1,1.4]]
+                : [[0.52,0.68], [0.47,0.73], [0.42,0.78], [0.34,0.86], [0.30,0.95], [0.1,1.4]];
+            const s_npr = [5, 2.5, 1.25, 0.63, 0, -5];
+            addMetric("Nasal Projection", npr.toFixed(2), getTier(npr, r_npr, s_npr));
         }
 
-        rep.innerHTML = html;
-        window.scrollTo(0, document.body.scrollHeight);
+        document.getElementById('metrics-container').innerHTML = html;
+        document.getElementById('results-area').style.display = 'block';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
-    function card(title, val, cls, tag, desc) {
-        return `<div class="card">
-            <div>
-                <div style="color:#888; font-size:0.8rem">${title}</div>
-                <div class="val">${val}</div>
-                <div style="font-size:0.75rem; opacity:0.7">${desc}</div>
-            </div>
-            <div class="tag ${cls}">${tag}</div>
-        </div>`;
-    }
 </script>
 </body>
 </html>
