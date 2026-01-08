@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmony Facial Analysis AI</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background: #111; color: #0f0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; text-align: center; }
+        canvas { border: 2px solid #333; max-width: 100%; margin-top: 20px; }
+        .results { margin-top: 20px; text-align: left; border: 1px solid #333; padding: 20px; }
+        .tier-s { color: #ffd700; text-shadow: 0 0 10px #ffd700; } /* Gold */
+        .tier-a { color: #00ff00; } /* Green */
+        .tier-f { color: #ff0000; } /* Red */
+        button { padding: 10px 20px; background: #333; color: #fff; border: 1px solid #fff; cursor: pointer; }
+        button:hover { background: #555; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>HARMONY ANALYZER v1.0</h1>
+        <p>Upload a Front Profile Image for Analysis</p>
+        
+        <input type="file" id="imageUpload" accept="image/*">
+        <canvas id="outputCanvas"></canvas>
+        
+        <div id="loading" style="display:none;">SCANNING BIOMETRICS...</div>
+        
+        <div class="results" id="scorecard" style="display:none;">
+            <h3>// ANALYSIS REPORT</h3>
+            <div id="metrics"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
