@@ -1,8 +1,10 @@
-// HARMONY AI - Main Logic
+// HARMONY AI - Debug Version v1.2
 const fileInput = document.getElementById('imageUpload');
 const canvas = document.getElementById('outputCanvas');
 const ctx = canvas.getContext('2d');
 const metricsDiv = document.getElementById('metrics');
+const scorecard = document.getElementById('scorecard');
+const loading = document.getElementById('loading');
 
 // 1. Setup MediaPipe FaceMesh
 const faceMesh = new FaceMesh({locateFile: (file) => {
@@ -31,8 +33,9 @@ fileInput.addEventListener('change', (event) => {
     canvas.height = img.height;
     ctx.drawImage(img, 0, 0);
     
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('scorecard').style.display = 'none';
+    loading.style.display = 'block';
+    scorecard.style.display = 'none';
+    metricsDiv.innerHTML = ""; // Clear previous
     
     // Run the AI
     await faceMesh.send({image: img});
@@ -46,15 +49,23 @@ function getDistance(p1, p2) {
 
 function calculateAngle(A, B, C) {
     // Calculates angle at point B (Vertex)
+    // Safety check for undefined points
+    if(!A || !B || !C) return 0;
+    
     const AB = Math.sqrt(Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2));
     const BC = Math.sqrt(Math.pow(B.x - C.x, 2) + Math.pow(B.y - C.y, 2));
     const AC = Math.sqrt(Math.pow(C.x - A.x, 2) + Math.pow(C.y - A.y, 2));
+    
+    // Avoid division by zero
+    if (BC * AB === 0) return 0;
+
     // Cosine Rule
     let angleRad = Math.acos((BC*BC + AB*AB - AC*AC) / (2*BC*AB));
     return angleRad * (180 / Math.PI); // Convert to degrees
 }
 
 function getTierClass(tier) {
+    if (!tier) return "tier-f";
     if (tier.includes("Tier S")) return "tier-s";
     if (tier.includes("Tier A")) return "tier-a";
     if (tier.includes("Tier B")) return "tier-b";
@@ -63,34 +74,43 @@ function getTierClass(tier) {
 
 // 4. THE BRAIN: Process the measurements
 function onResults(results) {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('scorecard').style.display = 'block';
+  loading.style.display = 'none';
+  scorecard.style.display = 'block';
   
-  if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-    const landmarks = results.multiFaceLandmarks[0];
-    
-    // Draw the aesthetic mesh
-    drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C040', lineWidth: 0.5});
+  // Verify Landmarks exist
+  if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+      metricsDiv.innerHTML = "<span style='color:red'>No face detected. Please try a clearer photo.</span>";
+      return;
+  }
 
+  const landmarks = results.multiFaceLandmarks[0];
+
+  // Draw the mesh
+  try {
+      // Check if global drawing variables exist
+      if (window.drawConnectors && window.FACEMESH_TESSELATION) {
+          drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C040', lineWidth: 0.5});
+      }
+  } catch(e) {
+      console.log("Drawing failed, skipping visual mesh");
+  }
+
+  try {
     // --- DECISION: IS IT SIDE OR FRONT? ---
-    // We check the nose position relative to the cheeks (Z-depth or X-width)
     const nose = landmarks[1];
     const leftCheek = landmarks[234];
     const rightCheek = landmarks[454];
     
-    // Calculate Face Width on screen
     const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
-    
     let html = "";
     
-    // If face is very narrow or nose is far to side, it's a SIDE PROFILE
-    if (faceWidth < 0.3 || nose.x < leftCheek.x || nose.x > rightCheek.x) {
+    // SIDE PROFILE CHECK
+    if (faceWidth < 0.2 || nose.x < leftCheek.x || nose.x > rightCheek.x) {
         
-        // --- SIDE PROFILE LOGIC ---
         let profileSide = "Right";
-        let earIdx = 132, jawIdx = 172, chinIdx = 152; // Default Right
+        let earIdx = 132, jawIdx = 172, chinIdx = 152; 
 
-        // If nose is on the left side of screen, user is looking Left
+        // Check look direction
         if (nose.x < 0.5) { 
             profileSide = "Left";
             earIdx = 361; jawIdx = 397; chinIdx = 152; 
@@ -101,62 +121,63 @@ function onResults(results) {
         const chin = landmarks[chinIdx];
 
         // 1. Gonial Angle
-        const gonialAngle = calculateAngle(ear, jaw, chin);
+        let gonialAngle = calculateAngle(ear, jaw, chin);
+        if (isNaN(gonialAngle)) gonialAngle = 0;
         
-        [cite_start]// Scoring [cite: 2]
         let jawTier = "Tier F";
-        if (gonialAngle >= 112 && gonialAngle <= 123) jawTier = "Tier S (Ideal)";
-        else if (gonialAngle >= 109 && gonialAngle <= 128) jawTier = "Tier A";
-        else if (gonialAngle >= 105 && gonialAngle <= 135) jawTier = "Tier B";
+        if (gonialAngle >= 110 && gonialAngle <= 125) jawTier = "Tier S (Ideal)";
+        else if (gonialAngle >= 105 && gonialAngle <= 130) jawTier = "Tier A";
+        else if (gonialAngle > 90 && gonialAngle < 140) jawTier = "Tier B";
 
         html += `<h4>${profileSide} Profile Detected</h4>`;
         html += `<p><strong>Gonial Angle:</strong> ${gonialAngle.toFixed(1)}° <span class="${getTierClass(jawTier)}">[${jawTier}]</span></p>`;
         
-        // 2. Ramus/Mandible Ratio
+        // 2. Ramus Ratio
         const ramus = getDistance(ear, jaw);
         const mandible = getDistance(jaw, chin);
-        const ratio = ramus / mandible;
+        let ratio = ramus / mandible;
+        if (isNaN(ratio) || !isFinite(ratio)) ratio = 0;
         
-        [cite_start]// Scoring [cite: 2]
         let ratioTier = "Tier F";
-        if (ratio >= 0.59 && ratio <= 0.78) ratioTier = "Tier S (Ideal)";
-        else if (ratio >= 0.50 && ratio <= 0.85) ratioTier = "Tier A";
+        if (ratio >= 0.55 && ratio <= 0.80) ratioTier = "Tier S (Ideal)";
+        else if (ratio >= 0.45 && ratio <= 0.90) ratioTier = "Tier A";
 
         html += `<p><strong>Ramus Ratio:</strong> ${ratio.toFixed(2)} <span class="${getTierClass(ratioTier)}">[${ratioTier}]</span></p>`;
 
     } else {
-        
-        // --- FRONT PROFILE LOGIC ---
+        // FRONT PROFILE CHECK
         html += `<h4>Front Profile Detected</h4>`;
 
         // 1. Canthal Tilt
-        // Angle between inner eye corner (133) and outer (33)
         const outerEye = landmarks[33];
         const innerEye = landmarks[133];
-        const tilt = (Math.atan2(outerEye.y - innerEye.y, outerEye.x - innerEye.x) * 180 / Math.PI) * -1;
+        let tilt = (Math.atan2(outerEye.y - innerEye.y, outerEye.x - innerEye.x) * 180 / Math.PI) * -1;
+        if (isNaN(tilt)) tilt = 0;
         
-        [cite_start]// Scoring [cite: 8]
         let tiltTier = "Tier B";
-        if (tilt >= 5.2 && tilt <= 8.5) tiltTier = "Tier S (Ideal)";
+        if (tilt >= 4 && tilt <= 10) tiltTier = "Tier S (Ideal)";
         else if (tilt > 0) tiltTier = "Tier A (Positive)";
         else tiltTier = "Tier F (Negative)";
         
         html += `<p><strong>Canthal Tilt:</strong> ${tilt.toFixed(1)}° <span class="${getTierClass(tiltTier)}">[${tiltTier}]</span></p>`;
 
-        // 2. Eye Separation Ratio
-        // (Inner Distance / Face Width) * 100
+        // 2. Eye Separation
         const innerDist = getDistance(landmarks[133], landmarks[362]);
         const cheekWidth = getDistance(landmarks[234], landmarks[454]);
-        const esr = (innerDist / cheekWidth) * 100;
+        let esr = (innerDist / cheekWidth) * 100;
+        if (isNaN(esr)) esr = 0;
         
-        [cite_start]// Scoring [cite: 7]
         let esrTier = "Tier B";
-        if (esr >= 44.3 && esr <= 47.7) esrTier = "Tier S (Ideal)";
-        else if (esr >= 41 && esr <= 51) esrTier = "Tier A";
+        if (esr >= 45 && esr <= 47) esrTier = "Tier S (Ideal)";
+        else if (esr >= 42 && esr <= 50) esrTier = "Tier A";
         
         html += `<p><strong>Eye Separation:</strong> ${esr.toFixed(1)}% <span class="${getTierClass(esrTier)}">[${esrTier}]</span></p>`;
     }
 
     metricsDiv.innerHTML = html;
+
+  } catch (err) {
+      console.error(err);
+      metricsDiv.innerHTML = `<span style='color:red'>Calculation Error: ${err.message}</span>`;
   }
 }
