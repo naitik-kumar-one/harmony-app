@@ -3,38 +3,276 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harmony Facial Analysis AI</title>
-    <style>
-        body { font-family: 'Courier New', monospace; background: #111; color: #0f0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; text-align: center; }
-        canvas { border: 2px solid #333; max-width: 100%; margin-top: 20px; }
-        .results { margin-top: 20px; text-align: left; border: 1px solid #333; padding: 20px; }
-        .tier-s { color: #ffd700; text-shadow: 0 0 10px #ffd700; } /* Gold */
-        .tier-a { color: #00ff00; } /* Green */
-        .tier-f { color: #ff0000; } /* Red */
-        button { padding: 10px 20px; background: #333; color: #fff; border: 1px solid #fff; cursor: pointer; }
-        button:hover { background: #555; }
-    </style>
+    <title>HARMONY ANALYZER v1.5 (Debug Mode)</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 5px; text-shadow: 0 0 5px #00ff00; }
+        
+        /* The container for the image and canvas */
+        #container {
+            position: relative;
+            margin-top: 20px;
+            border: 1px solid #333;
+            display: inline-block;
+        }
+
+        /* Image and Canvas stack on top of each other */
+        img {
+            max-width: 100%;
+            max-height: 80vh; /* Prevents image from being too tall */
+            display: block;
+            opacity: 0.8;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        /* Controls */
+        #controls { margin: 20px 0; z-index: 10; }
+        input[type="file"] {
+            background: #1a1a1a;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        /* The Report Box */
+        #report-box {
+            margin-top: 30px;
+            border: 1px solid #333;
+            background: #000;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.1);
+            display: none; /* Hidden by default */
+        }
+
+        /* Debug Logger */
+        #debug-log {
+            margin-top: 10px;
+            color: yellow;
+            font-size: 0.8em;
+            border: 1px dashed yellow;
+            padding: 5px;
+            max-width: 600px;
+            display: none;
+        }
+
+        .tier-s { color: #ffd700; text-shadow: 0 0 5px #ffd700; font-weight: bold; }
+        .tier-a { color: #00ff00; font-weight: bold; }
+        .tier-b { color: #aaaaaa; }
+        .tier-f { color: #ff3333; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>HARMONY ANALYZER v1.0</h1>
-        <p>Upload a Front Profile Image for Analysis</p>
-        
-        <input type="file" id="imageUpload" accept="image/*">
+
+    <h1>HARMONY ANALYZER v1.5</h1>
+    <div>Upload a Front or Side Profile (JPG/PNG)</div>
+
+    <div id="controls">
+        <input type="file" id="imageUpload" accept="image/png, image/jpeg, image/jpg">
+    </div>
+    
+    <div id="debug-log">System Status: Waiting for user...</div>
+
+    <div id="container" style="display:none;">
+        <img id="inputImage" src="" alt="Face Analysis" />
         <canvas id="outputCanvas"></canvas>
-        
-        <div id="loading" style="display:none;">SCANNING BIOMETRICS...</div>
-        
-        <div class="results" id="scorecard" style="display:none;">
-            <h3>// ANALYSIS REPORT</h3>
-            <div id="metrics"></div>
-        </div>
     </div>
 
-    <script src="script.js"></script>
+    <div id="report-box">
+        <h3 style="border-bottom: 1px dashed #00ff00; padding-bottom:10px;">// ANALYSIS REPORT</h3>
+        <div id="metrics"></div>
+    </div>
+
+    <script>
+        // --- 1. SETUP VARIABLES ---
+        const imageUpload = document.getElementById('imageUpload');
+        const inputImage = document.getElementById('inputImage');
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        const reportBox = document.getElementById('report-box');
+        const metricsDiv = document.getElementById('metrics');
+        const debugLog = document.getElementById('debug-log');
+        const container = document.getElementById('container');
+
+        function log(msg) {
+            debugLog.style.display = 'block';
+            debugLog.innerHTML = "STATUS: " + msg;
+            console.log(msg);
+        }
+
+        // --- 2. INITIALIZE AI ---
+        log("Initializing FaceMesh...");
+        
+        const faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }});
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        faceMesh.onResults(onResults);
+        
+        log("System Ready. Please upload an image.");
+
+        // --- 3. HANDLE UPLOAD ---
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Reset UI
+            reportBox.style.display = 'none';
+            container.style.display = 'block';
+            log("Loading image...");
+
+            const imgUrl = URL.createObjectURL(file);
+            inputImage.src = imgUrl;
+
+            inputImage.onload = async () => {
+                // Resize canvas to match image exactly
+                canvas.width = inputImage.naturalWidth;
+                canvas.height = inputImage.naturalHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                log("Scanning Face... (This may take 5 seconds)");
+                
+                try {
+                    await faceMesh.send({image: inputImage});
+                } catch (error) {
+                    log("ERROR: AI crashed. " + error.message);
+                }
+            };
+        });
+
+        // --- 4. MATH FUNCTIONS ---
+        function getDist(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        function getAngle(A, B, C) {
+            // Returns angle at B in degrees
+            if(!A || !B || !C) return 0;
+            const AB = Math.sqrt(Math.pow(B.x - A.x, 2) + Math.pow(B.y - A.y, 2));
+            const BC = Math.sqrt(Math.pow(B.x - C.x, 2) + Math.pow(B.y - C.y, 2));
+            const AC = Math.sqrt(Math.pow(C.x - A.x, 2) + Math.pow(C.y - A.y, 2));
+            if(BC*AB === 0) return 0;
+            return Math.acos((BC*BC + AB*AB - AC*AC) / (2*BC*AB)) * (180 / Math.PI);
+        }
+
+        function getTier(val, sMin, sMax, aMin, aMax) {
+            if (val >= sMin && val <= sMax) return ["Tier S (Ideal)", "tier-s"];
+            if (val >= aMin && val <= aMax) return ["Tier A", "tier-a"];
+            return ["Tier B/C", "tier-b"];
+        }
+
+        // --- 5. THE AI PROCESSOR ---
+        function onResults(results) {
+            log("Face detected. Calculating scores...");
+            
+            if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
+                log("No face found. Try a clearer photo.");
+                return;
+            }
+
+            const landmarks = results.multiFaceLandmarks[0];
+
+            // Draw Mesh
+            if (window.drawConnectors) {
+                drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C040', lineWidth: 1});
+            }
+
+            try {
+                // Determine Profile Type
+                const nose = landmarks[1];
+                const leftCheek = landmarks[234];
+                const rightCheek = landmarks[454];
+                const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+                
+                let html = "";
+                
+                // --- SIDE PROFILE ---
+                // If nose is outside cheeks or face is very narrow
+                if (faceWidth < 0.2 || nose.x < leftCheek.x || nose.x > rightCheek.x) {
+                    let side = (nose.x < 0.5) ? "Left" : "Right";
+                    // Indices: Ear, Jaw, Chin
+                    let idx = (side === "Left") ? [361, 397, 152] : [132, 172, 152];
+                    
+                    const A = landmarks[idx[0]]; // Ear
+                    const B = landmarks[idx[1]]; // Jaw
+                    const C = landmarks[idx[2]]; // Chin
+
+                    // Gonial Angle
+                    let angle = getAngle(A, B, C);
+                    let [tierName, tierClass] = getTier(angle, 115, 125, 105, 135);
+                    
+                    // Ramus Ratio
+                    let ramus = getDist(A, B);
+                    let mand = getDist(B, C);
+                    let ratio = ramus / mand;
+                    let [rName, rClass] = getTier(ratio, 0.6, 0.8, 0.5, 0.9);
+
+                    html += `<h4>${side} Profile Detected</h4>`;
+                    html += `<p>Gonial Angle: <strong>${angle.toFixed(1)}°</strong> <span class="${tierClass}">${tierName}</span></p>`;
+                    html += `<p>Ramus/Mandible: <strong>${ratio.toFixed(2)}</strong> <span class="${rClass}">${rName}</span></p>`;
+
+                } 
+                // --- FRONT PROFILE ---
+                else {
+                    // Canthal Tilt
+                    const outer = landmarks[33];
+                    const inner = landmarks[133];
+                    let tilt = (Math.atan2(outer.y - inner.y, outer.x - inner.x) * 180 / Math.PI) * -1;
+                    let [tName, tClass] = getTier(tilt, 5, 10, 0, 15);
+
+                    // Eye Separation Ratio
+                    let innerEyeDist = getDist(landmarks[133], landmarks[362]);
+                    let faceW_px = getDist(landmarks[234], landmarks[454]);
+                    let esr = (innerEyeDist / faceW_px) * 100;
+                    let [eName, eClass] = getTier(esr, 45, 47, 42, 50);
+
+                    html += `<h4>Front Profile Detected</h4>`;
+                    html += `<p>Canthal Tilt: <strong>${tilt.toFixed(1)}°</strong> <span class="${tClass}">${tName}</span></p>`;
+                    html += `<p>Eye Separation: <strong>${esr.toFixed(1)}%</strong> <span class="${eClass}">${eName}</span></p>`;
+                }
+
+                // Show Report
+                metricsDiv.innerHTML = html;
+                reportBox.style.display = 'block';
+                log("Analysis Complete.");
+
+            } catch (err) {
+                log("Math Error: " + err.message);
+                console.error(err);
+            }
+        }
+    </script>
 </body>
 </html>
