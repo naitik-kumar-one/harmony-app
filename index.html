@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face IQ: Studio</title>
+    <title>Face IQ: Studio Final</title>
     <style>
         :root {
-            /* STUDIO THEME */
             --bg-body: #f5f5f7;
             --bg-panel: #ffffff;
             --text-primary: #1d1d1f;
             --text-secondary: #86868b;
-            --accent: #0066cc;
+            --accent: #0071e3;
             --accent-hover: #0077ed;
             --border: #d2d2d7;
             --divider: #e5e5e5;
-            --shadow: 0 4px 12px rgba(0,0,0,0.08);
-            --lens-border: rgba(0, 102, 204, 0.5);
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
             
             /* SCORING COLORS */
-            --tier-1: #34c759; /* Green */
-            --tier-2: #ff9f0a; /* Orange */
-            --tier-3: #ff3b30; /* Red */
+            --tier-1: #e4f9eb; --text-t1: #008a2e;
+            --tier-2: #fff4ce; --text-t2: #946c00;
+            --tier-3: #ffebeb; --text-t3: #cc0000;
             
             --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
             --font-mono: "SF Mono", "Menlo", monospace;
@@ -42,242 +40,185 @@
         /* --- LAYOUT --- */
         .app-container {
             display: grid;
-            grid-template-columns: 280px 1fr 350px;
+            grid-template-columns: 300px 1fr 360px;
             width: 100%;
             height: 100%;
         }
 
-        /* --- LEFT SIDEBAR (NAV) --- */
+        /* --- LEFT NAV --- */
         .sidebar-left {
             background: var(--bg-panel);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            z-index: 10;
+            padding: 24px;
+            z-index: 20;
         }
 
         .logo {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             margin-bottom: 30px;
-            color: var(--text-primary);
             letter-spacing: -0.5px;
         }
+        .logo span { color: var(--accent); }
 
-        .section-label {
+        .group-title {
             font-size: 0.7rem;
             font-weight: 600;
             color: var(--text-secondary);
             text-transform: uppercase;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             letter-spacing: 0.5px;
         }
 
-        .nav-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 25px;
-        }
-
+        .nav-row { display: flex; gap: 8px; margin-bottom: 20px; }
         .nav-btn {
-            text-align: left;
-            padding: 10px 12px;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 500;
-        }
-        .nav-btn:hover { background: #f5f5f7; }
-        .nav-btn.active { background: #eef7ff; color: var(--accent); font-weight: 600; }
-
-        .upload-wrapper {
-            margin-top: auto;
-        }
-        .upload-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 12px;
-            background: var(--text-primary);
-            color: #fff;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
+            flex: 1; padding: 10px; border: 1px solid var(--border);
+            background: #fff; border-radius: 8px; font-size: 0.85rem;
+            font-weight: 600; color: var(--text-secondary); cursor: pointer;
             transition: 0.2s;
-            font-size: 0.9rem;
         }
-        .upload-btn:hover { background: #333; }
-        
-        /* REFERENCE MINI-MAP */
-        .ref-map {
-            margin-top: 20px;
-            background: #f5f5f7;
-            border-radius: 12px;
-            height: 200px;
-            padding: 10px;
-            position: relative;
+        .nav-btn:hover { background: #f9f9f9; }
+        .nav-btn.active { 
+            background: var(--accent); color: #fff; border-color: var(--accent);
+            box-shadow: 0 4px 10px rgba(0,113,227,0.2);
         }
-        #mini-svg { width: 100%; height: 100%; opacity: 0.6; }
-        .map-path { fill: none; stroke: #999; stroke-width: 1; transition: 0.2s; }
-        .map-path.active { fill: var(--accent); stroke: var(--accent); opacity: 1; }
 
-        /* --- CENTER (CANVAS) --- */
+        .upload-btn {
+            width: 100%; padding: 14px; background: #1d1d1f; color: #fff;
+            border-radius: 10px; font-weight: 600; cursor: pointer;
+            transition: 0.2s; text-align: center; font-size: 0.9rem;
+            margin-top: auto; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .upload-btn:hover { background: #333; transform: translateY(-1px); }
+
+        /* SVG MAP */
+        .map-box {
+            background: #fbfbfd; border: 1px solid var(--border);
+            border-radius: 12px; height: 220px; padding: 10px;
+            position: relative; margin-top: 10px;
+        }
+        #mini-svg { width: 100%; height: 100%; opacity: 0.5; }
+        .map-feat { fill: #fff; stroke: #999; stroke-width: 1; transition: 0.2s; }
+        .map-feat.active { fill: var(--accent); stroke: var(--accent); opacity: 1; filter: drop-shadow(0 2px 4px rgba(0,113,227,0.3)); }
+
+        .step-toast {
+            margin-top: 15px; padding: 12px; border-left: 3px solid var(--accent);
+            background: #f0f7ff; border-radius: 0 6px 6px 0;
+        }
+        #step-txt { font-weight: 700; color: var(--accent); font-size: 0.9rem; }
+        #step-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; }
+
+        /* --- CENTER WORKSPACE --- */
         .workspace {
-            position: relative;
-            background: #e8e8ed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+            position: relative; background: #e8e8ed;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; cursor: none; /* Hide cursor for custom crosshair */
         }
 
         canvas {
-            display: block;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-radius: 4px;
-            cursor: none; /* Hide default cursor */
+            display: block; max-width: 95%; max-height: 95%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15); border-radius: 6px;
         }
 
-        /* OFFSET ZOOM LENS */
-        #lens {
-            position: absolute;
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            border: 4px solid #fff;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            overflow: hidden;
-            background: #fff;
-            pointer-events: none;
-            display: none;
-            z-index: 100;
+        /* FIXED ZOOM INSPECTOR (PIP) */
+        #zoom-pip {
+            position: absolute; top: 20px; right: 20px;
+            width: 180px; height: 180px;
+            background: #fff; border: 4px solid #fff;
+            border-radius: 12px; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 100; display: none;
         }
-        #lens-crosshair {
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 8px; height: 8px;
-            background: var(--accent);
-            border: 2px solid #fff;
-            border-radius: 50%;
+        #zoom-crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 100%; height: 100%; transform: translate(-50%, -50%);
+            background: 
+                linear-gradient(to right, transparent 49.5%, var(--accent) 49.5%, var(--accent) 50.5%, transparent 50.5%),
+                linear-gradient(to bottom, transparent 49.5%, var(--accent) 49.5%, var(--accent) 50.5%, transparent 50.5%);
+            opacity: 0.5;
+        }
+        #zoom-label {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(255,255,255,0.9); padding: 4px;
+            text-align: center; font-size: 0.7rem; font-weight: 700;
+            color: var(--text-secondary); border-top: 1px solid #eee;
+        }
+
+        /* CURSOR CROSSHAIR */
+        #cursor-cross {
+            position: absolute; pointer-events: none;
+            width: 20px; height: 20px;
             transform: translate(-50%, -50%);
-            z-index: 101;
+            z-index: 90; display: none;
         }
+        #cursor-cross::before, #cursor-cross::after {
+            content: ''; position: absolute; background: var(--accent);
+        }
+        #cursor-cross::before { top: 9px; left: 0; width: 20px; height: 2px; }
+        #cursor-cross::after { top: 0; left: 9px; width: 2px; height: 20px; }
 
-        /* UNDO BUTTON */
-        .float-undo {
-            position: absolute;
-            bottom: 30px;
-            background: #fff;
-            padding: 10px 20px;
-            border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            font-weight: 600;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            display: none;
-            transition: 0.2s;
+        /* FLOATING UNDO */
+        .fab-undo {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: #fff; padding: 10px 24px; border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: 600;
+            color: var(--text-primary); cursor: pointer; border: 1px solid var(--border);
+            transition: 0.2s; display: none; z-index: 10;
         }
-        .float-undo:hover { transform: scale(1.05); }
+        .fab-undo:hover { transform: translateX(-50%) scale(1.05); }
 
         /* --- RIGHT SIDEBAR (RESULTS) --- */
         .sidebar-right {
-            background: var(--bg-panel);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 10;
+            background: var(--bg-panel); border-left: 1px solid var(--border);
+            display: flex; flex-direction: column; z-index: 20;
+            transition: transform 0.3s;
         }
 
-        .results-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--divider);
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(10px);
+        .res-header {
+            padding: 24px; border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
         }
         .res-title { font-size: 1rem; font-weight: 700; }
-        .res-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
+        .res-subtitle { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; }
 
-        .results-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            background: #fbfbfd;
-        }
+        .res-body { flex: 1; overflow-y: auto; padding: 20px; background: #fbfbfd; }
 
-        /* METRIC CARD */
-        .metric-card {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-            cursor: pointer;
-            position: relative;
+        /* CARDS */
+        .card {
+            background: #fff; border: 1px solid var(--border);
+            border-radius: 10px; padding: 16px; margin-bottom: 12px;
+            cursor: pointer; transition: all 0.2s; position: relative;
         }
-        .metric-card:hover {
-            border-color: var(--accent);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transform: translateY(-1px);
-        }
-        .metric-card.active {
-            border-color: var(--accent);
-            background: #f0f7ff;
-        }
-        .metric-card.active::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-            background: var(--accent); border-radius: 4px 0 0 4px;
-        }
+        .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card.active { border-color: var(--accent); background: #f2f7ff; }
+        .card.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); border-radius: 4px 0 0 4px; }
 
-        .m-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .m-title { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-        .m-value { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+        .card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .card-name { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+        .card-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
         
-        .pill {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-        .p-t1 { background: #eafbf0; color: #1d8f43; border: 1px solid #ccecd6; }
-        .p-t2 { background: #fff6e5; color: #b45309; border: 1px solid #fde68a; }
-        .p-t3 { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .pill { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+        .p1 { background: var(--tier-1); color: var(--text-t1); }
+        .p2 { background: var(--tier-2); color: var(--text-t2); }
+        .p3 { background: var(--tier-3); color: var(--text-t3); }
 
-        /* STEP INDICATOR */
-        .step-toast {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
+        /* SCORE */
+        .score-box {
+            text-align: center; margin-bottom: 20px; padding: 15px;
+            background: linear-gradient(135deg, #f0f7ff, #ffffff);
+            border: 1px solid #d0e3ff; border-radius: 12px;
         }
-        .step-toast.show { opacity: 1; }
+        .final-score { font-size: 2.5rem; font-weight: 800; color: var(--accent); line-height: 1; }
+        .final-label { font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 1px; margin-top: 5px; }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1000px) {
             .app-container { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-            .sidebar-left { display: none; } /* Hide full nav on mobile for focus */
-            .sidebar-right { position: fixed; bottom: 0; left: 0; width: 100%; height: 40%; transform: translateY(100%); transition: transform 0.3s; }
-            .sidebar-right.open { transform: translateY(0); }
+            .sidebar-left { display: none; } /* Simplified mobile view */
+            .sidebar-right { position: fixed; right: -100%; width: 100%; height: 100%; transition: right 0.3s; }
+            .sidebar-right.open { right: 0; }
+            /* Add mobile nav if needed */
         }
     </style>
 </head>
@@ -286,62 +227,87 @@
 <div class="app-container">
     
     <div class="sidebar-left">
-        <div class="logo">FaceIQ <span style="font-weight:400; color:var(--text-secondary)">Studio</span></div>
+        <div class="logo">FaceIQ <span>Studio</span></div>
         
-        <div class="section-label">Analysis Mode</div>
-        <div class="nav-group">
-            <button class="nav-btn active" id="btn-front" onclick="setMode('front')">Front Profile</button>
-            <button class="nav-btn" id="btn-side" onclick="setMode('side')">Side Profile</button>
+        <div class="group-title">Analysis Mode</div>
+        <div class="nav-row">
+            <button class="nav-btn active" id="m-front" onclick="setMode('front')">Front</button>
+            <button class="nav-btn" id="m-side" onclick="setMode('side')">Side</button>
         </div>
 
-        <div class="section-label">Gender Reference</div>
-        <div class="nav-group">
-            <button class="nav-btn active" id="btn-male" onclick="setGender('male')">Male</button>
-            <button class="nav-btn" id="btn-female" onclick="setGender('female')">Female</button>
+        <div class="group-title">Gender Reference</div>
+        <div class="nav-row">
+            <button class="nav-btn active" id="g-male" onclick="setGender('male')">Male</button>
+            <button class="nav-btn" id="g-female" onclick="setGender('female')">Female</button>
         </div>
 
-        <div class="ref-map">
-            <svg id="mini-svg" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#ddd" stroke-width="1"/>
-                <g id="map-front">
-                    <circle id="m-eye-l" cx="35" cy="45" r="3" class="map-path"/>
-                    <circle id="m-eye-r" cx="65" cy="45" r="3" class="map-path"/>
-                    <path id="m-nose" d="M50,45 L45,65 L55,65 Z" class="map-path"/>
-                    <path id="m-mouth" d="M35,80 Q50,85 65,80" fill="none" class="map-path" stroke-width="2"/>
-                    <circle id="m-jaw-l" cx="20" cy="75" r="3" class="map-path"/>
-                    <circle id="m-jaw-r" cx="80" cy="75" r="3" class="map-path"/>
-                    <circle id="m-chin" cx="50" cy="92" r="3" class="map-path"/>
+        <div class="map-box" id="map-wrap" style="opacity:0.5; pointer-events:none;">
+            <svg id="mini-svg" viewBox="0 0 100 120">
+                <g id="grp-front">
+                    <path d="M20,30 Q15,60 20,80 Q25,100 50,110 Q75,100 80,80 Q85,60 80,30 Q50,10 20,30" fill="none" stroke="#ccc" />
+                    <circle id="z-pupil-l" cx="35" cy="45" r="2.5" class="map-feat" fill="#999"/>
+                    <circle id="z-pupil-r" cx="65" cy="45" r="2.5" class="map-feat" fill="#999"/>
+                    <path id="z-eye-l" d="M25,45 Q35,40 45,45 Q35,50 25,45 Z" class="map-feat" fill="none" stroke="#999"/>
+                    <path id="z-eye-r" d="M55,45 Q65,40 75,45 Q65,50 55,45 Z" class="map-feat" fill="none" stroke="#999"/>
+                    <circle id="z-zygo-l" cx="15" cy="55" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-zygo-r" cx="85" cy="55" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-gon-l" cx="18" cy="75" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-gon-r" cx="82" cy="75" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-chin-l" cx="42" cy="105" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-chin-r" cx="58" cy="105" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-men" cx="50" cy="110" r="3" class="map-feat" fill="none"/>
+                    <path id="z-nose" d="M50,45 L42,70 L58,70 Z" class="map-feat" fill="none"/>
+                    <path id="z-mouth" d="M35,85 Q50,82 65,85 Q50,95 35,85 Z" class="map-feat" fill="none"/>
+                    <path id="z-brow-l" d="M23,38 Q35,32 47,38" class="map-feat" fill="none"/>
+                    <path id="z-brow-r" d="M53,38 Q65,32 77,38" class="map-feat" fill="none"/>
+                    <circle id="z-hair" cx="50" cy="15" r="3" class="map-feat" fill="none"/>
                 </g>
-                <g id="map-side" style="display:none;">
-                    <path id="m-prof" d="M60,20 L65,40 L80,55 L70,65 L75,80 L60,95" fill="none" class="map-path" stroke-width="2"/>
-                    <circle id="m-ear" cx="30" cy="55" r="4" class="map-path"/>
+                <g id="grp-side" display="none">
+                    <path d="M35,20 Q15,50 35,110 L65,110 Q75,90 65,70 L65,20 Z" fill="none" stroke="#ccc"/>
+                    <path id="z-prof" d="M65,20 L70,40 L85,60 L75,75 L80,90 L65,110" fill="none" stroke="#999"/>
+                    <circle id="z-s-gla" cx="67" cy="40" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-nas" cx="65" cy="48" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-tip" cx="85" cy="60" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-sub" cx="75" cy="65" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-pog" cx="80" cy="100" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-men" cx="70" cy="110" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-gon" cx="35" cy="85" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-ear" cx="30" cy="60" r="3" class="map-feat" fill="none"/>
+                    <circle id="z-s-orb" cx="50" cy="50" r="3" class="map-feat" fill="none"/>
                 </g>
             </svg>
         </div>
 
-        <div class="upload-wrapper">
-            <label class="upload-btn">
-                Open Image
-                <input type="file" id="fileIn" accept="image/*" style="display:none">
-            </label>
+        <div class="step-toast" id="step-box" style="margin-top:20px; display:none;">
+            <div id="step-txt">IDLE</div>
+            <div id="step-sub">Awaiting Image</div>
         </div>
+
+        <label class="upload-btn">
+            <span>📷</span> Upload Photo
+            <input type="file" id="fileIn" accept="image/*" style="display:none">
+        </label>
     </div>
 
     <div class="workspace">
         <canvas id="cvs"></canvas>
-        <div id="lens"><div id="lens-crosshair"></div></div>
-        <div class="step-toast" id="toast">Step 1: Left Pupil</div>
-        <div class="float-undo" id="undo-btn" onclick="undo()">Undo Point</div>
+        <div id="cursor-cross"></div>
+        <div id="zoom-pip">
+            <div id="zoom-crosshair"></div>
+            <div id="zoom-label">3.0x ZOOM</div>
+        </div>
+        <div class="fab-undo" id="undo-btn" onclick="undo()">↩ Undo Point</div>
     </div>
 
-    <div class="sidebar-right">
+    <div class="sidebar-right" id="res-panel">
         <div class="results-header">
-            <div class="res-title">Measurement Data</div>
-            <div class="res-sub">Select a card to visualize</div>
+            <div class="res-title">Biometric Report</div>
+            <div class="res-sub">Click cards to visualize</div>
+            <button onclick="toggleRes()" style="float:right; border:none; background:none; font-size:1.5rem; display:none;" id="close-mob">×</button>
         </div>
         <div class="results-scroll" id="res-list">
-            <div style="padding:40px; text-align:center; color:#999;">
-                Upload an image and place landmarks to begin analysis.
+            <div style="text-align:center; color:#999; margin-top:50px;">
+                Complete analysis to view data.
             </div>
         </div>
     </div>
@@ -351,9 +317,9 @@
 <script>
     const cvs = document.getElementById('cvs');
     const ctx = cvs.getContext('2d');
-    const lens = document.getElementById('lens');
-    const lCvs = document.createElement('canvas'); lCvs.width=160; lCvs.height=160;
-    const lCtx = lCvs.getContext('2d');
+    const pip = document.getElementById('zoom-pip');
+    const pipCtx = document.createElement('canvas').getContext('2d'); // Helper for zoom
+    const cursor = document.getElementById('cursor-cross');
 
     const state = {
         img: null,
@@ -364,79 +330,87 @@
         scale: 1
     };
 
-    // --- PROTOCOLS (Includes Chin Corners) ---
-    const STEPS = {
+    // --- LANDMARKS ---
+    const MAPS = {
         front: [
-            { id: 'p_l', txt: 'Left Pupil', m: 'm-eye-l' },
-            { id: 'p_r', txt: 'Right Pupil', m: 'm-eye-r' },
-            { id: 'z_l', txt: 'Left Cheekbone', m: 'm-eye-l' },
-            { id: 'z_r', txt: 'Right Cheekbone', m: 'm-eye-r' },
-            { id: 'g_l', txt: 'Left Jaw Corner', m: 'm-jaw-l' },
-            { id: 'g_r', txt: 'Right Jaw Corner', m: 'm-jaw-r' },
-            { id: 'men', txt: 'Chin Bottom', m: 'm-chin' },
-            { id: 'cc_l', txt: 'Left Chin Corner', m: 'm-chin' },
-            { id: 'cc_r', txt: 'Right Chin Corner', m: 'm-chin' },
-            { id: 'al_l', txt: 'Left Nostril Edge', m: 'm-nose' },
-            { id: 'al_r', txt: 'Right Nostril Edge', m: 'm-nose' },
-            { id: 'mc_l', txt: 'Left Mouth Corner', m: 'm-mouth' },
-            { id: 'mc_r', txt: 'Right Mouth Corner', m: 'm-mouth' },
-            { id: 'ic_l', txt: 'Left Inner Eye', m: 'm-eye-l' },
-            { id: 'oc_l', txt: 'Left Outer Eye', m: 'm-eye-l' },
-            { id: 'ic_r', txt: 'Right Inner Eye', m: 'm-eye-r' },
-            { id: 'oc_r', txt: 'Right Outer Eye', m: 'm-eye-r' },
-            { id: 'gla', txt: 'Between Brows', m: 'm-eye-l' },
-            { id: 'sn', txt: 'Nose Base', m: 'm-nose' },
-            { id: 'ls', txt: 'Upper Lip Top', m: 'm-mouth' },
-            { id: 'li', txt: 'Lower Lip Bottom', m: 'm-mouth' },
-            { id: 'hair', txt: 'Hairline Center', m: 'm-eye-l' }
+            { id: 'p_l', txt: 'Left Pupil Center', z: 'z-pupil-l' },
+            { id: 'p_r', txt: 'Right Pupil Center', z: 'z-pupil-r' },
+            { id: 'z_l', txt: 'Left Cheekbone (Widest)', z: 'z-zygo-l' },
+            { id: 'z_r', txt: 'Right Cheekbone (Widest)', z: 'z-zygo-r' },
+            { id: 'g_l', txt: 'Left Jaw Corner (Gonion)', z: 'z-gon-l' },
+            { id: 'g_r', txt: 'Right Jaw Corner (Gonion)', z: 'z-gon-r' },
+            { id: 'men', txt: 'Chin Bottom (Menton)', z: 'z-men' },
+            { id: 'cc_l', txt: 'Left Chin Corner', z: 'z-chin-l' },
+            { id: 'cc_r', txt: 'Right Chin Corner', z: 'z-chin-r' },
+            { id: 'ic_l', txt: 'Left Inner Eye Corner', z: 'z-eye-l' },
+            { id: 'oc_l', txt: 'Left Outer Eye Corner', z: 'z-eye-l' },
+            { id: 'ic_r', txt: 'Right Inner Eye Corner', z: 'z-eye-r' },
+            { id: 'oc_r', txt: 'Right Outer Eye Corner', z: 'z-eye-r' },
+            { id: 'al_l', txt: 'Left Nostril Edge', z: 'z-nose' },
+            { id: 'al_r', txt: 'Right Nostril Edge', z: 'z-nose' },
+            { id: 'mc_l', txt: 'Left Mouth Corner', z: 'z-mouth' },
+            { id: 'mc_r', txt: 'Right Mouth Corner', z: 'z-mouth' },
+            { id: 'br_il', txt: 'L Brow Inner', z: 'z-brow-l' },
+            { id: 'br_ol', txt: 'L Brow Outer', z: 'z-brow-l' },
+            { id: 'br_ir', txt: 'R Brow Inner', z: 'z-brow-r' },
+            { id: 'br_or', txt: 'R Brow Outer', z: 'z-brow-r' },
+            { id: 'hair', txt: 'Hairline Center', z: 'z-hair' },
+            { id: 'gla', txt: 'Glabella (Brows)', z: 'z-brow-l' },
+            { id: 'sn', txt: 'Nose Base', z: 'z-nose' },
+            { id: 'ls', txt: 'Upper Lip Top', z: 'z-mouth' },
+            { id: 'li', txt: 'Lower Lip Bottom', z: 'z-mouth' }
         ],
         side: [
-            { id: 'gla', txt: 'Glabella', m: 'm-prof' },
-            { id: 'nas', txt: 'Nasion (Bridge)', m: 'm-prof' },
-            { id: 'prn', txt: 'Nose Tip', m: 'm-prof' },
-            { id: 'sn', txt: 'Nose Base', m: 'm-prof' },
-            { id: 'ls', txt: 'Top Lip', m: 'm-prof' },
-            { id: 'li', txt: 'Bottom Lip', m: 'm-prof' },
-            { id: 'pog', txt: 'Chin Tip', m: 'm-prof' },
-            { id: 'men', txt: 'Chin Bottom', m: 'm-prof' },
-            { id: 'gon', txt: 'Jaw Corner', m: 'm-ear' },
-            { id: 'tra', txt: 'Ear Hole', m: 'm-ear' },
-            { id: 'orb', txt: 'Under Eye', m: 'm-prof' }
+            { id: 'gla', txt: 'Glabella', z: 'z-s-gla' },
+            { id: 'nas', txt: 'Nasion (Dip)', z: 'z-s-nas' },
+            { id: 'prn', txt: 'Nose Tip', z: 'z-s-tip' },
+            { id: 'sn', txt: 'Nose Base', z: 'z-s-sub' },
+            { id: 'ls', txt: 'Top Lip', z: 'z-prof' },
+            { id: 'li', txt: 'Bot Lip', z: 'z-prof' },
+            { id: 'pog', txt: 'Chin Tip (Forward)', z: 'z-s-pog' },
+            { id: 'men', txt: 'Chin Bottom', z: 'z-s-men' },
+            { id: 'gon', txt: 'Jaw Angle', z: 'z-s-gon' },
+            { id: 'tra', txt: 'Ear Hole', z: 'z-s-ear' },
+            { id: 'orb', txt: 'Under Eye', z: 'z-s-orb' }
         ]
     };
 
-    // --- EVENTS ---
-    document.getElementById('fileIn').addEventListener('change', loadImg);
+    // --- SETUP ---
+    document.getElementById('fileIn').addEventListener('change', init);
     window.addEventListener('resize', () => { resize(); draw(); });
 
-    function loadImg(e) {
+    function init(e) {
         if(!e.target.files[0]) return;
         state.img = new Image();
         state.img.src = URL.createObjectURL(e.target.files[0]);
         state.img.onload = () => {
             state.points = [];
             state.activeMetric = null;
+            document.getElementById('map-wrap').style.opacity = 1;
+            document.getElementById('map-wrap').style.pointerEvents = 'auto';
             document.getElementById('undo-btn').style.display = 'block';
+            document.getElementById('step-box').style.display = 'block';
+            toggleRes(false);
             resize();
-            updateUI();
+            ui();
             draw();
         };
     }
 
     function setMode(m) {
-        state.mode = m; state.points = []; state.activeMetric = null;
-        document.getElementById('btn-front').className = m==='front'?'nav-btn active':'nav-btn';
-        document.getElementById('btn-side').className = m==='side'?'nav-btn active':'nav-btn';
-        document.getElementById('map-front').style.display = m==='front'?'block':'none';
-        document.getElementById('map-side').style.display = m==='side'?'block':'none';
-        updateUI(); draw();
+        state.mode = m; state.points = []; state.activeMetric = null; toggleRes(false);
+        document.getElementById('m-front').className = m==='front'?'nav-btn active':'nav-btn';
+        document.getElementById('m-side').className = m==='side'?'nav-btn active':'nav-btn';
+        document.getElementById('grp-front').setAttribute('display', m==='front'?'block':'none');
+        document.getElementById('grp-side').setAttribute('display', m==='side'?'block':'none');
+        ui(); draw();
     }
 
     function setGender(g) {
         state.gender = g;
-        document.getElementById('btn-male').className = g==='male'?'nav-btn active':'nav-btn';
-        document.getElementById('btn-female').className = g==='female'?'nav-btn active':'nav-btn';
-        if(isDone()) calculate();
+        document.getElementById('g-male').className = g==='male'?'nav-btn active':'nav-btn';
+        document.getElementById('g-female').className = g==='female'?'nav-btn active':'nav-btn';
+        if(isDone()) calc();
     }
 
     function resize() {
@@ -450,65 +424,73 @@
         state.scale = w / state.img.width;
     }
 
-    function undo() { state.points.pop(); state.activeMetric = null; updateUI(); draw(); }
-    function isDone() { return state.points.length === STEPS[state.mode].length; }
+    function undo() { state.points.pop(); state.activeMetric = null; toggleRes(false); ui(); draw(); }
+    function isDone() { return state.points.length === MAPS[state.mode].length; }
+    function toggleRes(open) {
+        const p = document.getElementById('res-panel');
+        if(window.innerWidth < 1000) {
+            p.style.right = open ? '0' : '-100%';
+            document.getElementById('close-mob').style.display = open ? 'block' : 'none';
+        }
+    }
 
-    // --- INTERACTION ---
+    // --- PIP ZOOM (FIXED) ---
     cvs.addEventListener('mousemove', e => handle(e, false));
     cvs.addEventListener('mousedown', e => handle(e, true));
-    cvs.addEventListener('mouseleave', () => lens.style.display = 'none');
+    cvs.addEventListener('mouseleave', () => { pip.style.display = 'none'; cursor.style.display = 'none'; });
 
     function handle(e, isClick) {
-        if(!state.img || isDone()) { lens.style.display='none'; return; }
+        if(!state.img || isDone()) { pip.style.display='none'; cursor.style.display='none'; return; }
         const r = cvs.getBoundingClientRect();
         const x = e.clientX - r.left;
         const y = e.clientY - r.top;
         
         if(isClick) {
             state.points.push({x, y});
-            updateUI(); draw();
-            if(isDone()) calculate();
+            ui(); draw();
+            if(isDone()) calc();
             return;
         }
 
-        // LENS OFFSET LOGIC (So it doesn't block view)
-        const offset = 30;
-        let lx = e.clientX + offset;
-        let ly = e.clientY - 80;
+        // Show Custom Cursor
+        cursor.style.display = 'block';
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
 
-        // Bounce off right edge
-        if (lx + 160 > window.innerWidth) lx = e.clientX - 160 - offset;
+        // Show Fixed PIP (Top Right)
+        pip.style.display = 'block';
         
-        lens.style.display = 'block';
-        lens.style.left = lx + 'px';
-        lens.style.top = ly + 'px';
-
-        // Draw Zoom
-        const z = 2.5;
+        // Draw to PIP
+        const cvsZoom = document.createElement('canvas'); // Temp canvas
+        cvsZoom.width = 180; cvsZoom.height = 180;
+        const ctxZ = cvsZoom.getContext('2d');
+        
+        const z = 3; // 3x Zoom
         const sX = x / state.scale;
         const sY = y / state.scale;
-        lCtx.fillStyle = '#fff'; lCtx.fillRect(0,0,160,160);
-        lCtx.drawImage(state.img, sX - 80/z, sY - 80/z, 160/z, 160/z, 0, 0, 160, 160);
-        lens.style.backgroundImage = `url(${lCvs.toDataURL()})`;
+        
+        ctxZ.fillStyle = '#fff'; ctxZ.fillRect(0,0,180,180);
+        ctxZ.drawImage(state.img, sX - 60/z, sY - 60/z, 120/z, 120/z, 0, 0, 180, 180);
+        
+        // Set PIP Background
+        pip.style.backgroundImage = `url(${cvsZoom.toDataURL()})`;
+        pip.style.backgroundSize = 'cover';
     }
 
-    // --- UI UPDATES ---
-    function updateUI() {
-        const list = STEPS[state.mode];
+    function ui() {
+        const list = MAPS[state.mode];
         const idx = state.points.length;
-        const toast = document.getElementById('toast');
+        document.querySelectorAll('.map-feat').forEach(el => el.classList.remove('active'));
         
-        // Reset Map
-        document.querySelectorAll('.map-path').forEach(el => el.classList.remove('active'));
-
         if(idx < list.length) {
             const step = list[idx];
-            toast.innerText = `${idx+1}. ${step.txt}`;
-            toast.classList.add('show');
-            const m = document.getElementById(step.m);
-            if(m) m.classList.add('active');
+            document.getElementById('step-txt').innerText = `POINT ${idx+1}: ${step.txt}`;
+            document.getElementById('step-sub').innerText = "Place crosshair accurately.";
+            const z = document.getElementById(step.z);
+            if(z) z.classList.add('active');
         } else {
-            toast.classList.remove('show');
+            document.getElementById('step-txt').innerText = "ANALYSIS COMPLETE";
+            document.getElementById('step-sub').innerText = "Review results in panel.";
         }
     }
 
@@ -517,10 +499,8 @@
         if(!state.img) return;
         ctx.drawImage(state.img, 0, 0, cvs.width, cvs.height);
 
-        // Lines if result selected
         if(state.activeMetric) drawLines(state.activeMetric);
 
-        // Points
         state.points.forEach((p, i) => {
             ctx.beginPath();
             ctx.fillStyle = (i === state.points.length-1 && !isDone()) ? 'var(--accent)' : '#fff';
@@ -534,17 +514,18 @@
         ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = 'var(--accent)';
         ctx.beginPath();
         const m = state.mode;
-        // MAP INDICES
-        // Front: 0-1 Pupil, 2-3 Zygo, 4-5 Gon, 6 Men, 7-8 ChinC, 9-10 Nost, 11-12 MouthC, 13-16 Eye, 17 Gla, 18 Sn, 19-20 Lip, 21 Hair
-        if(m === 'front') {
+        // MAP Indices: 0-1 Pupils, 2-3 Zygo, 4-5 Gon, 6 Men, 7-8 ChinC, 9-12 Eyes, 13-14 Alar, 15-16 Mouth, 17-20 Brow, 21 Hair, 22 Gla, 23 Sn, 24-25 Lips
+        if(m==='front') {
             if(id==='ESR') { ln(0,1); ln(2,3); }
-            if(id==='FWHR') { ln(2,3); ln(17,19); }
-            if(id==='CANTH') { ln(13,14); ln(15,16); }
+            if(id==='FWHR') { ln(2,3); ln(22,24); }
+            if(id==='CANTH') { ln(9,10); ln(11,12); }
             if(id==='JAW') { ln(4,7); ln(7,6); ln(5,8); ln(8,6); } // Gon->ChinC->Men
-            if(id==='MID') { ln(0,1); ln(17,19); }
-            if(id==='THIRD') { ln(21,17); ln(17,18); ln(18,6); }
-            if(id==='CHIN') { ln(20,6); ln(18,19); }
-            if(id==='MN') { ln(11,12); ln(9,10); }
+            if(id==='CHIN') { ln(25,6); ln(23,24); }
+            if(id==='MID') { ln(0,1); ln(22,24); }
+            if(id==='THIRDS') { ln(21,22); ln(22,23); ln(23,6); }
+            if(id==='BIG') { ln(4,5); ln(2,3); }
+            if(id==='MN') { ln(15,16); ln(13,14); }
+            if(id==='BROW') { ln(17,18); ln(19,20); }
         } else {
             if(id==='GON') { ln(9,8); ln(8,7); }
             if(id==='NASO') { ln(0,1); ln(1,2); }
@@ -566,65 +547,70 @@
     }
 
     // --- CALC ---
-    function calculate() {
+    function calc() {
         const list = document.getElementById('res-list');
         list.innerHTML = "";
         const m = state.mode;
         const male = state.gender === 'male';
+        
+        let totalScore = 0, count = 0;
+        const scoreBox = document.createElement('div');
+        scoreBox.className = 'score-box';
+        list.appendChild(scoreBox);
 
         const add = (id, title, val, tiers) => {
             const v = parseFloat(val);
-            let lbl = "TIER 3", cls = "p-t3";
-            // Check T1 (Strict + Buffer)
-            if(v >= (tiers[0][0]-0.2) && v <= (tiers[0][1]+0.2)) { lbl="TIER 1"; cls="p-t1"; }
-            else if(v >= (tiers[1][0]-0.5) && v <= (tiers[1][1]+0.5)) { lbl="TIER 2"; cls="p-t2"; }
-
+            let lbl="TIER 3", cls="p3", pts=4;
+            // Buffer 0.1
+            for(let i=0; i<tiers.length; i++) {
+                if(v >= (tiers[i][0]-0.1) && v <= (tiers[i][1]+0.1)) {
+                    lbl = `TIER ${i+1}`; cls = `p${i+1}`; 
+                    pts = i===0?10:(i===1?7:4); break;
+                }
+            }
+            totalScore += pts; count++;
             const el = document.createElement('div');
-            el.className = 'metric-card';
-            el.innerHTML = `
-                <div class="m-header"><span class="m-title">${title}</span><span class="pill ${cls}">${lbl}</span></div>
-                <div class="m-value">${val}</div>
-            `;
+            el.className = 'card';
             el.onclick = () => {
-                document.querySelectorAll('.metric-card').forEach(e=>e.classList.remove('active'));
+                document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
                 el.classList.add('active');
                 state.activeMetric = id;
                 draw();
             };
+            el.innerHTML = `<div class="card-row"><span class="card-name">${title}</span><span class="pill ${cls}">${lbl}</span></div><div class="card-val">${val}</div>`;
             list.appendChild(el);
         };
 
         const r = (n) => Math.round(n * 100) / 100;
 
         if(m === 'front') {
-            const esr = r(dist(0,1) / dist(2,3) * 100);
-            add('ESR', 'Eye Separation', esr+'%', male ? [[45,47],[44,48]] : [[45,48],[44,49]]);
-
-            const fwhr = r(dist(2,3) / dist(17,19));
-            add('FWHR', 'FWHR', fwhr, male ? [[1.9,2.1],[1.8,2.2]] : [[1.8,2.2],[1.7,2.3]]);
-
-            const canth = r((slope(13,14)+slope(15,16))/2);
-            add('CANTH', 'Canthal Tilt', canth+'°', male ? [[5,9],[3,11]] : [[6,12],[4,14]]);
-
-            // Jaw Slope: Angle of 4-7-6 and 5-8-6
-            const jaw = r((angle(4,7,6) + angle(5,8,6))/2);
-            add('JAW', 'Jaw Taper', jaw+'°', male ? [[140,165],[135,170]] : [[145,170],[140,175]]);
-
-            const mid = r(dist(0,1)/dist(17,19));
+            const esr = r(dist(0,1)/dist(2,3)*100);
+            add('ESR', 'Eye Separation', esr+'%', male?[[45,47],[44,48]]:[[45,48],[44,49]]);
+            
+            const fwhr = r(dist(2,3)/dist(22,24));
+            add('FWHR', 'FWHR', fwhr, male?[[1.9,2.1],[1.8,2.2]]:[[1.8,2.2],[1.7,2.3]]);
+            
+            const jaw = r((angle(4,7,6)+angle(5,8,6))/2);
+            add('JAW', 'Jaw Taper', jaw+'°', [[140,165],[135,175]]);
+            
+            const cant = r((slope(9,10)+slope(11,12))/2);
+            add('CANTH', 'Canthal Tilt', cant+'°', male?[[5,10],[3,12]]:[[6,12],[4,14]]);
+            
+            const mid = r(dist(0,1)/dist(22,24));
             add('MID', 'Midface Ratio', mid, [[0.9,1.05],[0.85,1.1]]);
-
-            const chinp = r(dist(20,6)/dist(18,19));
-            add('CHIN', 'Chin-Philtrum', chinp, [[2.0,2.5],[1.8,2.8]]);
-
-            const thirds = r((dist(17,18) / (dist(21,17)+dist(17,18)+dist(18,6)))*100);
-            add('THIRD', 'Midface %', thirds+'%', [[32,36],[30,38]]);
-
-            const mn = r(dist(11,12)/dist(9,10));
+            
+            const chin = r(dist(25,6)/dist(23,24));
+            add('CHIN', 'Chin-Philtrum', chin, [[2.0,2.5],[1.8,2.8]]);
+            
+            const mn = r(dist(15,16)/dist(13,14));
             add('MN', 'Mouth-Nose', mn, [[1.4,1.6],[1.3,1.7]]);
-
+            
+            // Thirds
+            const u=dist(21,22), md=dist(22,23), lo=dist(23,6), tot=u+md+lo;
+            add('THIRDS', 'Midface %', r(md/tot*100)+'%', [[30,36],[28,38]]);
         } else {
             const gon = r(angle(9,8,7));
-            add('GON', 'Gonial Angle', gon+'°', male ? [[115,125],[110,130]] : [[120,130],[115,135]]);
+            add('GON', 'Gonial Angle', gon+'°', male?[[115,125],[110,130]]:[[120,130],[115,135]]);
             
             const nas = r(angle(0,1,2));
             add('NASO', 'Nasofrontal', nas+'°', [[115,135],[110,140]]);
@@ -633,11 +619,15 @@
             add('CONV', 'Convexity', conv+'°', [[165,175],[160,180]]);
             
             const ram = r(dist(9,8)/dist(8,7));
-            add('RAM', 'Ramus Ratio', ram, male ? [[0.55,0.75],[0.5,0.85]] : [[0.5,0.7],[0.45,0.8]]);
+            add('RAM', 'Ramus Ratio', ram, [[0.55,0.8],[0.5,0.9]]);
             
             const man = r(angle(7,8,10));
             add('MAN', 'Mandib. Plane', man+'°', [[15,25],[10,30]]);
         }
+
+        const final = count>0 ? (totalScore/count).toFixed(1) : 0;
+        scoreBox.innerHTML = `<div class="final-score">${final}</div><div class="final-label">HARMONY SCORE</div>`;
+        toggleRes(true);
     }
 </script>
 </body>
